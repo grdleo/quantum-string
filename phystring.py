@@ -35,7 +35,7 @@ class PhyString:
         self.dt = dt
         self.length = length # [m]
         self.celerity = celerity # [m/s]
-        self.linear_dentisty = linear_density # [kg/m]
+        self.linear_density = linear_density # [kg/m]
         self.exitation = exitation_fx
         self.particles = particles
 
@@ -76,6 +76,14 @@ class PhyString:
         ic_pos1[bdl] = ic_pos[bdl] # not computing borders again!
 
         self.field = OneSpaceField(ic_pos, ic_pos1) 
+    
+    def __repr__(self):
+        return "[STRING]    L={}m, c={}m/s, ρ={}kg/m ; with {} particles".format(
+            self.length,
+            self.celerity,
+            self.linear_density,
+            self.particles.particles_quantity
+        )
         
     def update(self):
         """

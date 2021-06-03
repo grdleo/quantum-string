@@ -62,12 +62,19 @@ class Particles:
         """
         self.empty = True
         self.nb_linear_steps = nb_linear_steps
-        if len(particles) != 0:
+        self.particles_quantity = len(particles)
+        if self.particles_quantity != 0:
             self.empty = False
             self.particles = particles
             for p in particles:
                 if p.nb_linear_steps != self.nb_linear_steps:
                     raise ValueError("Some particles are on different strings!")
+    
+    def __repr__(self):
+        s = "[PARTICLES]    "
+        for (p, i) in zip(self.particles, range(0, self.particles_quantity)):
+            s += "{}: m={}kg, ω={}rad/s ; ".format(i, p.mass, p.pulsation)
+        return s
     
     def update(self):
         """

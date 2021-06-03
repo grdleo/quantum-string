@@ -10,11 +10,13 @@ import math
 import time
 import random
 import time
+import datetime
 
 class Simulation:
     """
         Class that wraps the whole simulation thing
     """
+    IMG_PREFIX = "QuantumString"
     def __init__(self, dt: float, time_steps: int, string_len: float, string_c: float, string_density: float, exitation_fx, ic_pos: list, ic_vel: list, particles, log=True):
         """
             Initialisation of the simulation
@@ -48,11 +50,52 @@ class Simulation:
         self.dt = dt
 
         self.s = PhyString(string_len, string_discret, dt, string_c, string_density, exitation_fx, ic_pos, ic_vel, particles)
+    
+    def __repr__(self):
+        return "[SIMULATION]    Δt={}s, Δx={}m, time steps={}, string steps (nb discretisation)={}; ".format(self.s.dt, self.s.dx, self.time_steps, self.s.nb_linear_steps)
+    
+    def run(self, path: str, anim=True, file=True, log=True, dpi=96):
+        """
+            Runs the simulation with options to save it as a animation and/or in a file
 
+            :param path: path for the simulation to be saved
+            :type path: str
+        """
+        dtnow = datetime.datetime.now()
+        timestamp = int(dtnow.timestamp())
         print("SIMULATION:") if self.log else None
-        for t in range(0, time_steps):
-            self.s.update()
-            print("{}/{}".format(t, time_steps)) if self.log else None
+        ffn = "QuantumString-field_{}.txt".format(timestamp)
+        pfn = "QuantumString-particles_{}.txt".format(timestamp)
+        idtxtfield = "QUANTUM STRING SIMULATION ({}): {} {}\n".format(dtnow.isoformat(), self, self.s)
+        idtxtparts = "QUANTUM STRING SIMULATION ({}): {} {}\n".format(dtnow.isoformat(), self, self.s.particles)
+        ff = open("{}\\{}".format(path, ffn), "w", encoding="utf-8")
+        pf = open("{}\\{}".format(path, pfn), "w", encoding="utf-8")
+        ff.write(idtxtfield)
+        pf.write(idtxtparts)
+        
+        list_img = []
+        names_img = []
+        for t in range(0, self.time_steps):
+            if t > 1: # do not update when the timesteps are lower than 1 bc this corresponds to the two initial fields
+                self.s.update()
+            f = self.s.field.get_val_time(t)
+            pp = self.s.particles.list_pos(tstep=t)
+            if anim: # create the images for the animation
+                (imgname, img) = self.instant_img(f, pp, t, path, dpi)
+                list_img.append(img)
+                names_img.append(imgname)
+            if file: # append the current field to the file
+                fstr = Simulation.list2str(f)
+                pstr = Simulation.list2str(pp)
+                ff.write("{}\n".format(fstr))
+                pf.write("{}\n".format(pstr))
+            print("{}/{}".format(t, self.time_steps)) if self.log else None
+        if anim:
+            print("animation finalisation...") if self.log else None
+            self.create_gif(list_img, names_img, 60, path, id_img=timestamp)
+        if file:
+            print("output file finalisation...") if self.log else None
+
     
     @staticmethod
     def compute_string_discret(l: float, c: float, dt: float):
@@ -68,6 +111,19 @@ class Simulation:
             :rtype: int
         """
         return int(l/c/dt)
+    
+    @staticmethod
+    def list2str(l: list):
+        """
+            Converts a list to a string in a simple format for our use
+
+            :param l: a list to be converted
+            :type l: list
+
+            :return: list converted into string
+            :rtype: str
+        """
+        return str(l).replace("[", "").replace("]", "").replace("\n", "")
     
     def print(self):
         """
@@ -92,45 +148,74 @@ class Simulation:
             time.sleep(self.s.dt)
             clear_console()
     
-    def make_anim(self, path: str, dpi=96):
+    def instant_img(self, field: list, particles_pos: list, tstep: int, path: str, dpi: int, ylim=(-0.15, 0.15)):
         """
-            Creates an animation (using MatPlotLib) for the simulation, in a .gif 
+            Creates an image of the system given the field and a list of the x position of the particles, in the path given, and returns the image opened with Pillow
 
-            :param path: path of the folder for the file to be created
-            :param dpi: dpi for the gif
+            :param field: u(x)
+            :param particles_pos: position (cell) of each particle
+            :param tstep: time step corresponding to the field
+            :param path: path for the image to be created
+            :param dpi: dpi of the image
+            :param ylim: vertical axis interval visualisation
 
+            :type field: list
+            :type particles_pos: list
+            :type tstep: int
             :type path: str
             :type dpi: int
+            :type ylim: tuple
+
+            :return: tuple of the path of the image and the image opened with Pillow
+            :rtype: tuple: (str, Pillow object)
         """
-        dpi = 72 
         x = np.linspace(0, self.s.length, self.s.nb_linear_steps)
-        file_prefix = "QUANTUMSTRING_anim"
-        anim = []
-        list_names = []
-        print("ANIMATION CREATION:") if self.log else None
-        for i in range(0, self.time_steps):
-            fn = "{}\\{}-{}.png".format(path, file_prefix, i)
-            f = self.s.field.get_val_time(i)
-            p = self.s.particles.mass_presence(tstep=i)
-            pp = x*p # == 0 if no particle, == to the x position if the particle is in the cell
-            px = pp[pp != 0] # get a list of the x positions of the particle
-            py = f[pp != 0] # get a list of the y positions of the particle
-            
-            plt.plot(x, f, "b")
-            plt.plot(px, py, "r.")
-            plt.title("Field visualisation   t={}s".format(i*self.s.dt))
-            plt.xlabel("$x$ position on the bench [m]")
-            plt.ylabel("$y$ value for the field [m]")
-            plt.ylim((-0.6, 0.6))
-            plt.savefig(fn, dpi=dpi)
-            plt.close()
-            anim.append(Image.open(fn))
-            list_names.append(fn)
-            print("{}/{}".format(i, self.time_steps)) if self.log else None
-        anim[0].save("{}\\{}-{}.gif".format(path, file_prefix, int(time.time())), duration=self.dt, save_all=True, append_images=anim[1:], optimize=True, loop=0)
-        for i, fn in zip(anim, list_names):
-            i.close()
-            os.remove(fn)
+        filename = "{}-{}.png".format(Simulation.IMG_PREFIX, tstep)
+        saving_path = "{}\\{}".format(path, filename)
+        px = x[particles_pos]
+        py = field[particles_pos] # get a list of the y positions of the particle
+        
+        plt.plot(x, field, "b")
+        plt.plot(px, py, "r.")
+        plt.title("Field visualisation   t={}s".format(tstep*self.s.dt))
+        plt.xlabel("$x$ position on the bench [m]")
+        plt.ylabel("$y$ value for the field [m]")
+        plt.ylim(ylim)
+        plt.savefig(saving_path, dpi=dpi)
+        plt.close()
+
+        return (saving_path, Image.open(saving_path))
+    
+    def create_gif(self, list_images: list, list_names_images: list, fps: int, path: str, id_img=0, del_imgs=True):
+        """
+            Creates a gif out of the images given
+
+            :param list_images: list of the Pillow images
+            :param list_names_images: list of the path+name of the images
+            :param fps: frames per second for the gif
+            :param path: path for the gif to be created
+            :param id_img: suffix at the end of the name of the image (for identification)
+            :param del_imgs: delete the images after the creation of the gif
+
+            :type list_images: list
+            :type list_names_images: list
+            :type fps: int
+            :type path: str
+            :type id_img: int
+            :type del_imgs: bool
+
+            :return: path of the gif created
+            :rtype: str
+        """
+        suffix = "" if id_img == 0 else id_img
+        pathgif = "{}\\{}-{}.gif".format(path, Simulation.IMG_PREFIX, suffix)
+        list_images[0].save(pathgif, duration=1/fps, save_all=True, append_images=list_images[1:], optimize=True, loop=0)
+        if del_imgs:
+            for i, fn in zip(list_images, list_names_images):
+                i.close()
+                os.remove(fn)
+        return pathgif
+
 
 class RestString(Simulation):
     """
