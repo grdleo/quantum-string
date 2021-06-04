@@ -6,24 +6,30 @@ class OneSpaceField:
 
         The memory can be limited if necessary
     """
-    def __init__(self, val_t0: list, val_t1: list, memory=np.inf):
+    def __init__(self, init_val, memory=np.inf):
         """
             Initialise the field
 
-            :param val_t0: the value of the field at t=0×Δt
-            :param val_t1: the value of the field at t=1×Δt
+            :param init_val: initial value for the field. Each line is a value of the field at a certain time. First line is for t=0, second line is for t=Δt, etc
             :param memory: number of fields that will be saved at the same time (if inf -> no limit of memory)
 
-            :type val_t0: list
-            :type val_t1: list
+            :type init_val: NumPy 2D array
             :type memory: int
         """
-        ValueError("'memory' has to be greater than 3!") if memory < 3 else None
+        if memory < 3:
+            raise ValueError("'memory' has to be greater than 3!")
 
         # val = list or float
-        self._last_tstep = 1
+        try:
+            (x, y) = init_val.shape
+            if x <= 0:
+                raise ValueError("Initial value for the field is not of a correct shape!")
+            self._last_tstep = x - 1
+            self.val = np.copy(init_val)
+        except:
+            raise ValueError("Initial value for the field is probably not a NumPy matrix!")
+
         self.memory = memory
-        self.val = np.vstack((val_t0, val_t1))
     
     def time_steps(self):
         """
@@ -70,7 +76,7 @@ class OneSpaceField:
         """
         tstep = t if self._last_tstep <= self.memory else t - self._last_tstep + self.memory
         if tstep < 0 and t >= 0: # therefore user tried to access a field that does not exist anymore due to memory restriction
-            raise ValueError("Cannot access the field to the field at time step {} because of memory restriction")
+            raise ValueError("Cannot access the field to the field at time step {} because of memory restriction".format(t))
         return self.val[tstep]
     
     def get_val_pos(self, n: int):

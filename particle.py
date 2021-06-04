@@ -35,8 +35,9 @@ class Particle:
 
         if not fixed:
             raise NotImplementedError("Moving particles not implemented yet! :(")
-
-        self.pos = OneSpaceField(pos, pos_next)
+        
+        init_val =np.vstack((pos, pos_next))
+        self.pos = OneSpaceField(init_val)
     
     def update(self):
         """

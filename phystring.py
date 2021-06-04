@@ -75,7 +75,8 @@ class PhyString:
         ic_pos1[pt] = ic_pos[pt] + ic_vel[pt]*self.dt - self.cst_pt/mass_density[pt]*(PhyString.shift_list_left(ic_pos)[pt] - PhyString.shift_list_right(ic_pos)[pt])
         ic_pos1[bdl] = ic_pos[bdl] # not computing borders again!
 
-        self.field = OneSpaceField(ic_pos, ic_pos1) 
+        init_val = np.vstack((ic_pos, ic_pos1))
+        self.field = OneSpaceField(init_val)
     
     def __repr__(self):
         return "[STRING]    L={}m, c={}m/s, ρ={}kg/m ; with {} particles".format(

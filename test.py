@@ -3,10 +3,10 @@ import numpy as np
 import os
 
 mypath = os.path.dirname(os.path.abspath(__file__))
-mypath = "C:\\Users\\leog\\Documents\\UGA\\M1\\Stage\\output" # A CHANGER BIEN SUR
+mypath = "C:\\Users\\leog\\Desktop\\lg2021stage\\output" # A CHANGER BIEN SUR
 
-dt = 0.001 # [s]
-time_steps = 5000
+dt = 0.01 # [s]
+time_steps = 5
 L = 2.0 # [m]
 c = 2.0 # [m/s]
 string_steps = simulation.Simulation.compute_string_discret(L, c, dt)
