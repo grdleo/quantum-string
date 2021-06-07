@@ -31,14 +31,6 @@ class OneSpaceField:
 
         self.memory = memory
     
-    def time_steps(self):
-        """
-            Returns the number of time steps in the field
-
-            :return: number of time steps for this field (aka the number of 1D fields in this class, or the number of rows in the matrix)
-        """
-        return self.val.shape[0]
-    
     def pos_steps(self):
         """
             Returns the number of position steps in the field
@@ -74,9 +66,9 @@ class OneSpaceField:
 
             :return: the 1D field at the time step considered
         """
-        tstep = t if self._last_tstep <= self.memory else t - self._last_tstep + self.memory
+        tstep = t if (self._last_tstep < self.memory) or (t < 0) else t - self._last_tstep + self.memory
         if tstep < 0 and t >= 0: # therefore user tried to access a field that does not exist anymore due to memory restriction
-            raise ValueError("Cannot access the field to the field at time step {} because of memory restriction".format(t))
+            raise ValueError("Cannot access the field to the cell at time step {} because of memory restriction".format(t))
         return self.val[tstep]
     
     def get_val_pos(self, n: int):
@@ -97,3 +89,11 @@ class OneSpaceField:
             :return: field at the time t₁, where t₁ is the current time step of the field
         """
         return self.get_val_time(self._last_tstep)
+    
+    def get_prev(self):
+        """
+            Returns the field at the time t₁-1, where t₁ is the current time step of the field
+
+            :return: field at the time t₁-1, where t₁ is the current time step of the field
+        """
+        return self.get_val_time(self._last_tstep - 1)

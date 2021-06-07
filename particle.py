@@ -37,7 +37,7 @@ class Particle:
             raise NotImplementedError("Moving particles not implemented yet! :(")
         
         init_val =np.vstack((pos, pos_next))
-        self.pos = OneSpaceField(init_val)
+        self.pos = OneSpaceField(init_val, memory=5)
     
     def update(self):
         """
@@ -64,10 +64,13 @@ class Particles:
         self.empty = True
         self.nb_linear_steps = nb_linear_steps
         self.particles_quantity = len(particles)
+        self.free_particles = False # if True, at least one particle is moving 
         if self.particles_quantity != 0:
             self.empty = False
             self.particles = particles
             for p in particles:
+                if not p.fixed:
+                    self.free_particles = True
                 if p.nb_linear_steps != self.nb_linear_steps:
                     raise ValueError("Some particles are on different strings!")
     
@@ -85,7 +88,7 @@ class Particles:
             for p in self.particles:
                 p.update()
     
-    def list_pos(self, tstep=-1):
+    def list_pos(self, tstep=-1) -> list:
         """
             Return a list where each entry corresponds to the index of the cell where a particle is, at a step
 
@@ -101,7 +104,7 @@ class Particles:
                 s.append(int(p.pos.get_val_time(tstep)))
         return np.array(s)
     
-    def list_free(self, tstep=-1):
+    def list_free(self, tstep=-1) -> list:
         """
             Return a list where each entry corresponds to the index of the cell where a particle is NOT, at a step (complementary of list_pos)
 
@@ -118,12 +121,15 @@ class Particles:
                 s = np.delete(s, i)
         return np.array(s)
     
-    def mass_density(self, tstep=-1):
+    def mass_density(self, tstep=-1, fixed=False) -> list:
         """
             Return a list where each cell corresponds to a cell of the string. if cell == 0, no particle on this step. if cell >= 1, corresponds to the total mass at that cell
             
             :param tstep: the time step considered
+            :param fixed: if True, will return only the masses that are fixed on the string
+
             :type tstep: int
+            :type fixed: bool
 
             :return: list corresponding to the mass of the particles of the string in each cells
             :rtype: list 
@@ -132,23 +138,44 @@ class Particles:
         if not self.empty:
             for p in self.particles:
                 pos = int(p.pos.get_val_time(tstep)) # get the position of each particle
-                s[pos] += p.mass # increment the vector where the particle is
+                s[pos] += 0 if fixed and not p.fixed else p.mass # increment the vector where the particle is
         return np.array(s)
-    
-    def mass_presence(self, tstep=-1):
+
+    def spring_density(self, tstep=-1, fixed=False) -> list:
+        """
+            Return a list where each cell corresponds to a cell of the string. if cell == 0, no particle on this step. if cell > 0, the value corresponds to the spring stiffness attached to this cell
+            
+            :param tstep: the time step considered
+            :param fixed: if True, will return only the masses that are fixed on the string
+
+            :type tstep: int
+            :type fixed: bool
+
+            :return: list corresponding to the spring stiffness at that location
+            :rtype: list 
+        """
+        s = [0]*self.nb_linear_steps
+        if not self.empty:
+            for p in self.particles:
+                pos = int(p.pos.get_val_time(tstep)) # get the position of each particle
+                s[pos] += 0 if fixed and not p.fixed else p.mass*p.pulsation*p.pulsation # increment the vector where the particle is
+        return np.array(s)
+
+    def mass_presence(self, tstep=-1, fixed=False) -> list:
         """
             Return a list where each cell corresponds to a cell of the string. if cell == False, no particle on this step. if cell == True, at least 1 particle is present on this cell
             
             :param tstep: the time step considered
+            :param fixed: if True, will return only the masses that are fixed on the string
+
             :type tstep: int
+            :type fixed: bool
 
             :return: list corresponding to the presence of the particle
             :rtype: list 
         """
-        s = [False]*self.nb_linear_steps
-        if not self.empty:
-            for p in self.particles:
-                pos = int(p.pos.get_val_time(tstep)) # get the position of each particle
-                s[pos] = True # increment the vector where the particle is
+        s = np.array([False]*self.nb_linear_steps)
+        md = self.mass_density(tstep=tstep, fixed=fixed)
+        s[md != 0] = True
         return np.array(s)
 
