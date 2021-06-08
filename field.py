@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import ndarray
 
 class OneSpaceField:
     """
@@ -6,7 +7,7 @@ class OneSpaceField:
 
         The memory can be limited if necessary
     """
-    def __init__(self, init_val, memory=np.inf):
+    def __init__(self, init_val: ndarray, memory=np.inf):
         """
             Initialise the field
 
@@ -31,7 +32,7 @@ class OneSpaceField:
 
         self.memory = memory
     
-    def pos_steps(self):
+    def pos_steps(self) -> int:
         """
             Returns the number of position steps in the field
 
@@ -39,7 +40,7 @@ class OneSpaceField:
         """
         return self.val[0].shape[0]
     
-    def current_time_step(self):
+    def current_time_step(self) -> int:
         """
             Returns the value of the last time step of the field (aka the number of rows minus one)
         """
@@ -57,7 +58,7 @@ class OneSpaceField:
         if self._last_tstep > self.memory: # if the amount of fields saved is superior to the memory allowed
             self.val = np.delete(self.val, 0, 0)
     
-    def get_val_time(self, t: int):
+    def get_val_time(self, t: int) -> ndarray:
         """
             Get the value of  the field at the step t×Δt
 
@@ -71,7 +72,7 @@ class OneSpaceField:
             raise ValueError("Cannot access the field to the cell at time step {} because of memory restriction".format(t))
         return self.val[tstep]
     
-    def get_val_pos(self, n: int):
+    def get_val_pos(self, n: int) -> ndarray:
         """
             Get the list of the values taken by the cell at step n×Δx for all time steps
 
@@ -82,7 +83,7 @@ class OneSpaceField:
         """
         return self.val[:,n]
 
-    def get_last(self):
+    def get_last(self) -> ndarray:
         """
             Returns the field at the time t₁, where t₁ is the current time step of the field
 
@@ -90,7 +91,7 @@ class OneSpaceField:
         """
         return self.get_val_time(self._last_tstep)
     
-    def get_prev(self):
+    def get_prev(self) -> ndarray:
         """
             Returns the field at the time t₁-1, where t₁ is the current time step of the field
 

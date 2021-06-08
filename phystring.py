@@ -47,43 +47,24 @@ class PhyString:
         if len(ic_pos) != nb_linear_steps or len(ic_vel) != nb_linear_steps:
             raise ValueError()
         
-        ### PREPARE FIELD ###
-        beg_pos = exitation_fx(0)
-        beg_poss = exitation_fx(1)
-        beg_vel = (beg_poss - beg_pos)/self.dt
-        ic_pos[0] = beg_pos
-        ic_pos1 = np.copy(ic_pos)
-        ic_pos1[0] = beg_poss
-        ic_vel[0] = beg_vel
+        rho = self.linear_density + self.particles.mass_density()/self.dx
+        kappa = self.particles.spring_density()
+
         ic_pos = np.array(ic_pos)
         ic_vel = np.array(ic_vel)
-        self.null_string = [0.0]*nb_linear_steps
-        self.false_string = [False]*nb_linear_steps
 
-        pt = particles.mass_presence()
-        npt = np == False
-        mass_density = particles.mass_density()
-        self.borders = np.array(self.false_string)
-        self.borders[0] = True
-        self.borders[-1] = True
-        bdl = [1, -1] # indexes of borders
+        ic_pos = self.apply_edge(ic_pos, 0)
+        utm = ic_pos - self.dt*ic_vel # for the initialisation, corresponds to the previous field
+        uxp = PhyString.shift_list_left(ic_pos)
+        uxm = PhyString.shift_list_right(ic_pos)
+        ic_pos1 = self.field_evo(ic_pos, utm, uxp, uxm, rho, kappa)
+        ic_pos1 = self.apply_edge(ic_pos1, 1)
 
-        # firs we update as free dalembertian where no particles are
-        ic_pos1 = np.array(self.null_string)
-        ############################################## NO INITIAL CONDITION!!! CHANGE PLS
-        """
-        ic_pos1[npt] = ic_pos[npt] + ic_vel[npt]*self.dt + 0.5*self.cst_npt*(PhyString.shift_list_left(ic_pos)[npt] + PhyString.shift_list_right(ic_pos)[npt] - 2*ic_pos[npt])
-        ic_pos1[bdl] = ic_pos[bdl] # not computing borders!
-
-        # and correctly update the string where the particles are
-        ic_pos1[pt] = ic_pos[pt] + ic_vel[pt]*self.dt - self.cst_pt/mass_density[pt]*(PhyString.shift_list_left(ic_pos)[pt] - PhyString.shift_list_right(ic_pos)[pt])
-        ic_pos1[bdl] = ic_pos[bdl] # not computing borders again!
-        """
         init_val = np.vstack((ic_pos, ic_pos1))
         self.field = OneSpaceField(init_val, memory=5)
     
     def __repr__(self):
-        return "[STRING]    L={}m, T={}N, ρ={}kg/m ; with {} particles".format(
+        return "[STRING]    L={}m, T={}N, ρ={}kg/m ; {} particles".format(
             self.length,
             self.tension,
             self.linear_density,
@@ -98,25 +79,22 @@ class PhyString:
 
         ### IF THE PARTICLES ARE ALL FIXED, NO NEED TO RECOMPUTE THIS EVERY FRAME !!!
         rho = self.linear_density + self.particles.mass_density()/self.dx
-        k = pt*self.particles.spring_density()
+        kappa = self.particles.spring_density()
         ###
 
         tstep = self.field.current_time_step()
-        beg_val = self.exitation(tstep + 1)
         last_val = self.field.get_last() # field at t
         llast_val = self.field.get_prev() # field at t - 1
         last_val_m = PhyString.shift_list_right(last_val) # field at t right shifted. means that at x position, will return value at x - 1
         last_val_p = PhyString.shift_list_left(last_val) # field at t left shifted. means that at x position, will return value at x + 1
 
-        newval = self.field_evo(last_val, llast_val, last_val_p, last_val_m, rho, k)
-
-        newval[0] = beg_val # do not compute the boundaries, but set the beggining of string
-        newval[-1] = last_val[-1] # do not compute the boundaries
+        newval = self.field_evo(last_val, llast_val, last_val_p, last_val_m, rho, kappa) # evolution of the string according to the equations
+        newval = self.apply_edge(newval, tstep + 1) # apply the conditions at both of the edges 
 
         self.field.update(newval) # update field
         self.particles.update() # update particles
     
-    def field_evo(self, u: list, utm: list, uxp: list, uxm: list, rho: list, k: list):
+    def field_evo(self, u: list, utm: list, uxp: list, uxm: list, rho: list, kappa: list) -> list:
         """
             Given the field, returns the evolution in time with the effective ρ and k
 
@@ -125,12 +103,20 @@ class PhyString:
             :param uxp: field at current time shifted -Δx
             :param uxm: field at current time shifted +Δx
             :param rho: effective linear density 
-            :param k: effective stiffness spring
+            :param kappa: effective stiffness spring
         """
         inv_force = 1/(rho*self.v2)
-        return 2*u*(1 - inv_force*(self.tension + 0.5*k*self.dx)) + inv_force*self.tension*(uxp + uxm) - utm
-
+        return 2*u*(1 - inv_force*(self.tension + 0.5*kappa*self.dx)) + inv_force*self.tension*(uxp + uxm) - utm
     
+    def apply_edge(self, f: list, t: int) -> list:
+        """
+            Apply the edge conditions to the string
+        """
+        u = np.copy(f)
+        u[0] = self.exitation(t)
+        u[-1] = 0.0
+        return u
+
     @staticmethod
     def shift_list_right(lst: list) -> list:
         # (corresponds to "-1" in equations)

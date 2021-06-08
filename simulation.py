@@ -54,7 +54,7 @@ class Simulation:
     def __repr__(self):
         return "[SIMULATION]    Δt={}s, Δx={}m, time steps={}, string steps (nb discretisation)={}; ".format(self.s.dt, self.s.dx, self.time_steps, self.s.nb_linear_steps)
 
-    def run(self, path: str, anim=True, file=True, log=True, dpi=96, res=(320, 240), fdur=12):
+    def run(self, path: str, anim=True, file=True, log=True, dpi=96, res=(320, 240), fdur=12, frameskip=True):
         """
             Runs the simulation with options to save it as a animation and/or in a file
 
@@ -74,12 +74,35 @@ class Simulation:
             pf = open("{}\\{}".format(path, pfn), "w", encoding="utf-8")
             ff.write(idtxtfield)
             pf.write(idtxtparts)
+        
+        cblack = (0, 0, 0)
+        template_anim = Image.new('RGB', res, color=cblack)
 
-        template_anim = Image.new('RGB', res, color=(255, 255, 255))
         if anim:
-            """
-                draw on the template...
-            """
+            pairoddlist = [i for i in range(0, 2*self.s.nb_linear_steps)]
+            pairoddlist = np.array(pairoddlist)
+            self.anim_params = {
+                "max_frames": 250,
+                "max_duration": 5000, # [ms]
+                "margin": 15,
+                "mass_rad": 1,
+                "wh": res,
+                "linx": np.linspace(0, self.s.length, self.s.nb_linear_steps),
+                "forx": pairoddlist % 2 == 0,
+                "fory": pairoddlist % 2 == 1,
+                "origin": None,
+                "pix_per_m": None
+            }
+            self.anim_params["origin"] = (self.anim_params["margin"], int(0.5*res[1]))
+            self.anim_params["pix_per_m"] = int(res[0]/self.s.length) - self.anim_params["margin"]*2
+
+            if type(frameskip) == bool and frameskip:
+                max_frames = self.anim_params["max_frames"]
+                tot_frames = max_frames if self.time_steps >= max_frames else self.time_steps
+                fdur = int(self.anim_params["max_duration"]/tot_frames)
+                frameskip = int(self.time_steps/tot_frames)
+            else:
+                frameskip = 1
 
         list_img = []
         for t in range(0, self.time_steps):
@@ -88,7 +111,8 @@ class Simulation:
             f = self.s.field.get_val_time(t)
             pp = self.s.particles.list_pos(tstep=t)
             if anim: # create the images for the animation
-                list_img.append(self.instant_img(template_anim.copy(), f, pp, t))
+                if t % frameskip == 0:
+                    list_img.append(self.instant_img(template_anim.copy(), f, pp, t))
             if file: # append the current field to the file
                 fstr = Simulation.list2str(f)
                 pstr = Simulation.list2str(pp)
@@ -132,32 +156,9 @@ class Simulation:
         """
         return str(l).replace("[", "").replace("]", "").replace("\n", "")
     
-    def print(self):
-        """
-            Prints a quick animation of the simulation in the console
-        """
-        clear_console = lambda: os.system("cls")
-        for f in self.s.field.val:
-            len_char = self.s.dx # [m]
-            nb_char = self.s.nb_linear_steps
-            interval = max(f) + 1e-6
-            min_val = min(f)
-            while interval >= min_val:
-                upper = interval
-                delta = 0.5*len_char
-                mid = upper - delta
-                vals_in_row = np.where(np.abs(f - mid) < delta)[0]
-                row = [" "]*nb_char
-                for i in vals_in_row:
-                    row[i] = "."
-                interval -= len_char
-                print("".join(row), end="\n")
-            time.sleep(self.s.dt)
-            clear_console()
-    
     def instant_img(self, baseimg: Image, field: list, particles_pos: list, tstep: int, yscale=5.0) -> Image:
         """
-            Create an image of the current state of the simulation
+            Creates an image of the current state of the simulation
 
             :param baseimg: base PIL Image to write onto
             :param field: state of the string
@@ -169,24 +170,30 @@ class Simulation:
             :rtype: PIL.Image
         """
         d = ImageDraw.Draw(baseimg)
-        (lx, ly) = baseimg.size
-        margin = 15
-        mass_rad = 1
-        (ox, oy) = (margin, int(0.5*ly))
-        pix_per_m = int(lx/self.s.length) - margin*2
-        n = [i for i in range(0, 2*self.s.nb_linear_steps)]
-        n = np.array(n)
-        forx = n % 2 == 0
-        fory = forx == False
-        linx = np.linspace(0, self.s.length, self.s.nb_linear_steps)
+        mass_rad = self.anim_params["mass_rad"]
+        (ox, oy) = self.anim_params["origin"]
+        pix_per_m = self.anim_params["pix_per_m"]
+        linx = self.anim_params["linx"]
+        forx = self.anim_params["forx"]
+        fory = self.anim_params["fory"]
         line_vals = np.zeros(shape=2*self.s.nb_linear_steps)
         px = linx*pix_per_m + ox
         py = -field*pix_per_m*yscale + oy
         line_vals[forx] = px
         line_vals[fory] = py
 
-        d.line(list(line_vals), fill=(0, 0, 0))
-        d.text((10, 10), "Hello world!", fill=(255, 0, 0))
+        begs = px[0]
+        ends = px[-1]
+
+        ctxt = (255, 0, 0)
+        crep = (32, 32, 32)
+        cwhite = (255, 255, 255)
+        cm_in_pix = pix_per_m*0.01
+        d.line([begs, oy, ends, oy], fill=crep) #horizontal
+        d.line(list(line_vals), fill=cwhite) # string
+        d.line([ends, oy - cm_in_pix*yscale, ends, oy + cm_in_pix*yscale], fill=crep) # scale line
+        d.text((ends - 15, oy - cm_in_pix*yscale - 15), "1cm", fill=crep) # +text scale
+        d.multiline_text((2, 2), "L={0}m rho={1}kg/m T={2}kg.m/s²\nt={3:0<6}s".format(self.s.length, self.s.linear_density, self.s.tension, round(tstep*self.dt, 6)), fill=ctxt)
 
         for p in particles_pos:
             pos = (px[p], py[p])
@@ -194,7 +201,7 @@ class Simulation:
 
         return baseimg
     
-    def create_anim(self, list_images: list, path: str, id_img=0, fdur=12):
+    def create_anim(self, list_images: list, path: str, id_img=0, fdur=12) -> str:
         """
             Creates a gif out of the images given
 
