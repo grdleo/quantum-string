@@ -17,12 +17,13 @@ class Simulation:
         Class that wraps the whole simulation thing
     """
     IMG_PREFIX = "QuantumString"
-    def __init__(self, dt: float, time_steps: int, string_len: float, string_density: float, string_tension: float, exitation_fx, ic_pos: list, ic_vel: list, particles, log=True):
+    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, exitation_fx, ic_pos: list, ic_vel: list, particles, log=True):
         """
             Initialisation of the simulation
 
             :param dt: value of the time step [s]
             :param time_steps: number of time steps
+            :param string_discret: number of cells in the string
             :param string_len: length of the string [m]
             :param string_c: celerity of the string [m/s]
             :param string_density: linear density of the string [kg/m]
@@ -34,6 +35,7 @@ class Simulation:
 
             :type dt: float
             :type time_steps: int
+            :type string_discret: int
             :type string_len: float
             :type string_c: float
             :type string_density: float
@@ -44,7 +46,6 @@ class Simulation:
             :type log: bool
 
         """
-        string_discret = Simulation.compute_string_discret(string_len, string_tension, string_density, dt)
         self.log = log
         self.time_steps = time_steps
         self.dt = dt
@@ -82,8 +83,8 @@ class Simulation:
             pairoddlist = [i for i in range(0, 2*self.s.nb_linear_steps)]
             pairoddlist = np.array(pairoddlist)
             self.anim_params = {
-                "max_frames": 250,
-                "max_duration": 5000, # [ms]
+                "max_frames": 500,
+                "max_duration": 10000, # [ms]
                 "margin": 15,
                 "mass_rad": 1,
                 "wh": res,
@@ -125,24 +126,6 @@ class Simulation:
         if file:
             print("output file finalisation...") if self.log else None
 
-    
-    @staticmethod
-    def compute_string_discret(l: float, T: float, rho: float, dt: float):
-        """
-            Returns the number of cells needed for the simulation, considering the length, the celerity and the time step
-            Follows the equation Δx/Δt = c
-
-            :param l: length of the string [m]
-            :param T: tension [kg.m/s²]
-            :param rho: linear density [kg/m]
-            :param dt: time step [s]
-
-            :return: number n of cells required for the string, such as l = n Δx
-            :rtype: int
-        """
-        c = np.sqrt(T/rho)
-        return int(l/c/dt)
-    
     @staticmethod
     def list2str(l: list):
         """
@@ -176,29 +159,28 @@ class Simulation:
         linx = self.anim_params["linx"]
         forx = self.anim_params["forx"]
         fory = self.anim_params["fory"]
-        line_vals = np.zeros(shape=2*self.s.nb_linear_steps)
-        px = linx*pix_per_m + ox
-        py = -field*pix_per_m*yscale + oy
+        line_vals = np.zeros(shape=2*self.s.nb_linear_steps).astype(int)
+        px = (linx*pix_per_m + ox).astype(int)
+        py = (-field*pix_per_m*yscale + oy).astype(int)
         line_vals[forx] = px
         line_vals[fory] = py
-
         begs = px[0]
         ends = px[-1]
+        line_vals = list(line_vals)
 
         ctxt = (255, 0, 0)
         crep = (32, 32, 32)
         cwhite = (255, 255, 255)
         cm_in_pix = pix_per_m*0.01
+        cm_scaled = int(cm_in_pix*yscale)
         d.line([begs, oy, ends, oy], fill=crep) #horizontal
-        d.line(list(line_vals), fill=cwhite) # string
-        d.line([ends, oy - cm_in_pix*yscale, ends, oy + cm_in_pix*yscale], fill=crep) # scale line
-        d.text((ends - 15, oy - cm_in_pix*yscale - 15), "1cm", fill=crep) # +text scale
-        d.multiline_text((2, 2), "L={0}m rho={1}kg/m T={2}kg.m/s²\nt={3:0<6}s".format(self.s.length, self.s.linear_density, self.s.tension, round(tstep*self.dt, 6)), fill=ctxt)
-
+        d.line(line_vals, fill=cwhite) # string
+        d.line([ends, oy - cm_scaled, ends, oy + cm_scaled], fill=crep) # scale line
+        d.text((ends - 15, oy - cm_scaled - 15), "1cm", fill=crep) # +text scale
+        d.multiline_text((2, 2), "L={:.3}m rho={:.3}kg/m T={:.3}N c={:.3}m/s\nt={:0<6}s".format(self.s.length, self.s.linear_density, self.s.tension, self.s.celerity, round(tstep*self.dt, 6)), fill=ctxt)
         for p in particles_pos:
             pos = (px[p], py[p])
             d.ellipse([pos[0] - mass_rad, pos[1] - mass_rad, pos[0] + mass_rad, pos[1] + mass_rad], fill=(255, 0, 0))
-
         return baseimg
     
     def create_anim(self, list_images: list, path: str, id_img=0, fdur=12) -> str:
@@ -226,28 +208,25 @@ class RestString(Simulation):
     """
         Abstraction of Simulation: the initial field is at rest
     """
-    def __init__(self, dt: float, time_steps: int, string_len: float, string_density: float, string_tension: float, exitation_fx, particles, log=True):
-        string_discret = Simulation.compute_string_discret(string_len, string_tension, string_density, dt) # number of cells in the string
+    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, exitation_fx, particles, log=True):
         ic_pos = [0]*string_discret
         ic_vel = ic_pos.copy()
-        super().__init__(dt, time_steps, string_len, string_density, string_tension, exitation_fx, ic_pos, ic_vel, particles, log=log)
+        super().__init__(dt, time_steps,  string_discret, string_len, string_density, string_tension, exitation_fx, ic_pos, ic_vel, particles, log=log)
 
 class FreeString(RestString):
     """
         Abstraction of RestString: the system is particle free
     """
-    def __init__(self, dt: float, time_steps: int, string_len: float, string_density: float, string_tension: float, exitation_fx, log=True):
-        string_discret = Simulation.compute_string_discret(string_len, string_tension, string_density, dt)
+    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, exitation_fx, log=True):
         particles = Particles(string_discret, [])
-        super().__init__(dt, time_steps, string_len, string_density, string_tension, exitation_fx, particles, log=log)
+        super().__init__(dt, time_steps, string_discret, string_len, string_density, string_tension, exitation_fx, particles, log=log)
 
 class CenterFixed(RestString):
     """
         Abstraction of RestString: the system has a single particle in the center of the string
     """
-    def __init__(self, dt: float, time_steps: int, string_len: float, string_density: float, string_tension: float, exitation_fx, mass_particle: float, pulsation_particle: float, log=True):
-        string_discret = Simulation.compute_string_discret(string_len, string_tension, string_density, dt)
+    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, exitation_fx, mass_particle: float, pulsation_particle: float, log=True):
         center_string = math.floor(string_discret*0.5)
         p = Particle(center_string, 0.0, mass_particle, pulsation_particle, True, string_discret)
         particles = Particles(string_discret, [p])
-        super().__init__(dt, time_steps, string_len, string_density, string_tension, exitation_fx, particles, log=log)
+        super().__init__(dt, time_steps, string_discret, string_len, string_density, string_tension, exitation_fx, particles, log=log)

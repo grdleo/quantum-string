@@ -2,11 +2,13 @@ import numpy as np
 
 from field import OneSpaceField 
 
+from fractions import Fraction
+
 class PhyString:
     """
         Class for the simulation of the string
     """
-    def __init__(self, length: float, nb_linear_steps: float, dt: float, linear_density: float, tension: float, exitation_fx, ic_pos: list, ic_vel: list, particles):
+    def __init__(self, length: float, nb_linear_steps: int, dt: float, linear_density: float, tension: float, exitation_fx, ic_pos: list, ic_vel: list, particles):
         """
             Initialisation of the string
 
@@ -31,12 +33,12 @@ class PhyString:
             :type ic_vel: list
             :type particles: Particles object 
         """
-        self.dx = length/nb_linear_steps
+        self.dx = length/float(nb_linear_steps)
         self.nb_linear_steps = nb_linear_steps
         self.dt = dt
         self.length = length # [m]
-        self.discret_vel = self.dx/self.dt # [m/s]
-        self.v2 = self.discret_vel**2
+        self.discret_vel = float(self.dx/self.dt) # [m/s]
+        self.invv2 = 1/(self.discret_vel*self.discret_vel)
         self.linear_density = linear_density # [kg/m]
         self.tension = tension # [kg.m/s²]
         self.exitation = exitation_fx
@@ -64,10 +66,11 @@ class PhyString:
         self.field = OneSpaceField(init_val, memory=5)
     
     def __repr__(self):
-        return "[STRING]    L={}m, T={}N, ρ={}kg/m ; {} particles".format(
+        return "[STRING]    L={}m, T={}N, ρ={}kg/m, c={}m/s ; {} particles".format(
             self.length,
             self.tension,
             self.linear_density,
+            self.celerity,
             self.particles.particles_quantity
         )
         
@@ -105,7 +108,7 @@ class PhyString:
             :param rho: effective linear density 
             :param kappa: effective stiffness spring
         """
-        inv_force = 1/(rho*self.v2)
+        inv_force = self.invv2/rho
         return 2*u*(1 - inv_force*(self.tension + 0.5*kappa*self.dx)) + inv_force*self.tension*(uxp + uxm) - utm
     
     def apply_edge(self, f: list, t: int) -> list:

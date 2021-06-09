@@ -5,21 +5,29 @@ import os
 mypath = os.path.dirname(os.path.abspath(__file__))
 mypath = "C:\\Users\\leog\\Desktop\\lg2021stage\\output" # A CHANGER BIEN SUR
 
-dt = 0.01 # [s]
-time_steps = 500
+duration = 2.0 # duration of simulation [s]
 L = 1.0 # [m]
-T = 1.0 # [kg.m/s²]
-rho = 1.0 # [kg/m]
-string_steps = simulation.Simulation.compute_string_discret(L, T, rho, dt)
-mass_particle = 1.0 # [kg]
+T = 10.0 # [N]
+rho = 0.0035 # [kg/m]
+mass_particle = 0.005 # [kg]
 pulsation_particle = 2*np.pi # [rad/s]
+signal_frec = 10.0 # [Hz]
+sampling_number = 50 # number of samples we will have in a single period (be careful with Shannon condition)
 
-n_period_pulse = int(0.25*string_steps)
+c = np.sqrt(T/rho)
+signal_wavelen = c/signal_frec # [m]
+signal_pulsation = 2*np.pi*signal_frec # [rad/s]
 
-# excitations disponibles pour le bout de la corde
-sinu = lambda tstep: 0.005*np.sin(2*np.pi*tstep/n_period_pulse)
+dt = 1/(sampling_number*signal_frec) # [s] computing the Δt according to Shannon condition
+time_steps = int(duration/dt)
+duration = dt*time_steps # recompute the duration in order to be consistent (may be a bit different)
+dx = c*dt # [m] because of Δx/Δt=c
+space_steps = int(L/dx)
+L = dx*space_steps # recompute the length in order to be consistent (may be a bit different)
 
-simu = simulation.CenterFixed(dt, time_steps, L, rho, T, sinu, mass_particle, pulsation_particle, log=True)
+sinu = lambda tstep: 0.01*np.sin(0.1*tstep)
+
+simu = simulation.CenterFixed(dt, time_steps, space_steps, L, rho, T, sinu, mass_particle, pulsation_particle, log=True)
 simu.run(mypath, anim=True, file=False, log=True)
 
 
