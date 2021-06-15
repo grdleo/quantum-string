@@ -1,5 +1,6 @@
 from phystring import PhyString
 from particle import Particle, Particles
+from edge import Edge
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,7 +18,7 @@ class Simulation:
         Class that wraps the whole simulation thing
     """
     IMG_PREFIX = "QuantumString"
-    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, exitation_fx, ic_pos: list, ic_vel: list, particles, log=True):
+    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, ic_pos: list, ic_vel: list, particles, log=True):
         """
             Initialisation of the simulation
 
@@ -27,7 +28,8 @@ class Simulation:
             :param string_len: length of the string [m]
             :param string_c: celerity of the string [m/s]
             :param string_density: linear density of the string [kg/m]
-            :param excitation_fx: function corresponding to the condition at the left side of the string
+            :param edge_left: the condition at the left extremity of the string
+            :param edge_right: the condition at the right extremity of the string
             :param ic_pos: initial condition of the position of the string
             :param ic_vel: initial condition of the velocity of the string
             :param particles: Particles object
@@ -39,7 +41,8 @@ class Simulation:
             :type string_len: float
             :type string_c: float
             :type string_density: float
-            :type excitation_fx: function
+            :type edge_left: Edge class
+            :type edge_right: Edge class
             :type ic_pos: list
             :type ic_vel: list
             :type particles: Particles object
@@ -50,7 +53,7 @@ class Simulation:
         self.time_steps = time_steps
         self.dt = dt
 
-        self.s = PhyString(string_len, string_discret, dt, string_density, string_tension, exitation_fx, ic_pos, ic_vel, particles)
+        self.s = PhyString(string_len, string_discret, dt, string_density, string_tension, edge_left, edge_right, ic_pos, ic_vel, particles)
     
     def __repr__(self):
         return "[SIMULATION]    Δt={}s, Δx={}m, time steps={}, string steps (nb discretisation)={}; ".format(self.s.dt, self.s.dx, self.time_steps, self.s.nb_linear_steps)
@@ -208,25 +211,25 @@ class RestString(Simulation):
     """
         Abstraction of Simulation: the initial field is at rest
     """
-    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, exitation_fx, particles, log=True):
+    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, particles, log=True):
         ic_pos = [0]*string_discret
         ic_vel = ic_pos.copy()
-        super().__init__(dt, time_steps,  string_discret, string_len, string_density, string_tension, exitation_fx, ic_pos, ic_vel, particles, log=log)
+        super().__init__(dt, time_steps,  string_discret, string_len, string_density, string_tension, edge_left, edge_right, ic_pos, ic_vel, particles, log=log)
 
 class FreeString(RestString):
     """
         Abstraction of RestString: the system is particle free
     """
-    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, exitation_fx, log=True):
+    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, log=True):
         particles = Particles(string_discret, [])
-        super().__init__(dt, time_steps, string_discret, string_len, string_density, string_tension, exitation_fx, particles, log=log)
+        super().__init__(dt, time_steps, string_discret, string_len, string_density, string_tension, edge_left, edge_right, particles, log=log)
 
 class CenterFixed(RestString):
     """
         Abstraction of RestString: the system has a single particle in the center of the string
     """
-    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, exitation_fx, mass_particle: float, pulsation_particle: float, log=True):
+    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, mass_particle: float, pulsation_particle: float, log=True):
         center_string = math.floor(string_discret*0.5)
         p = Particle(center_string, 0.0, mass_particle, pulsation_particle, True, string_discret)
         particles = Particles(string_discret, [p])
-        super().__init__(dt, time_steps, string_discret, string_len, string_density, string_tension, exitation_fx, particles, log=log)
+        super().__init__(dt, time_steps, string_discret, string_len, string_density, string_tension, edge_left, edge_right, particles, log=log)
