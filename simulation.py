@@ -5,11 +5,11 @@ from edge import Edge
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
+import cv2
+import ffmpeg
 
 import os
 import math
-import time
-import random
 import time
 import datetime
 
@@ -17,7 +17,12 @@ class Simulation:
     """
         Class that wraps the whole simulation thing
     """
-    IMG_PREFIX = "QuantumString"
+    IMG_PREFIX = "qs_img___"
+    VID_PREFIX = "QuantumString"
+    NB_ZEROS = 8
+    IMG_FORMAT = "png"
+    PERCENT_MAX = 100
+
     def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, ic_pos: list, ic_vel: list, particles, log=True):
         """
             Initialisation of the simulation
@@ -58,7 +63,11 @@ class Simulation:
     def __repr__(self):
         return "[SIMULATION]    Δt={}s, Δx={}m, time steps={}, string steps (nb discretisation)={}; ".format(self.s.dt, self.s.dx, self.time_steps, self.s.nb_linear_steps)
 
-    def run(self, path: str, anim=True, file=True, log=True, dpi=96, res=(320, 240), fdur=12, frameskip=True):
+    def img_file_path(self, path: str, i: int):
+        nb_str = str(i).zfill(Simulation.NB_ZEROS)
+        return "{}\\{}{}.{}".format(path, Simulation.IMG_PREFIX, nb_str, Simulation.IMG_FORMAT)
+
+    def run(self, path: str, anim=True, file=True, log=True, dpi=96, res=(480, 320), frameskip=True):
         """
             Runs the simulation with options to save it as a animation and/or in a file
 
@@ -87,9 +96,8 @@ class Simulation:
             pairoddlist = np.array(pairoddlist)
             self.anim_params = {
                 "max_frames": 500,
-                "max_duration": 10000, # [ms]
                 "margin": 15,
-                "mass_rad": 1,
+                "mass_rad": 3,
                 "wh": res,
                 "linx": np.linspace(0, self.s.length, self.s.nb_linear_steps),
                 "forx": pairoddlist % 2 == 0,
@@ -103,29 +111,66 @@ class Simulation:
             if type(frameskip) == bool and frameskip:
                 max_frames = self.anim_params["max_frames"]
                 tot_frames = max_frames if self.time_steps >= max_frames else self.time_steps
-                fdur = int(self.anim_params["max_duration"]/tot_frames)
                 frameskip = int(self.time_steps/tot_frames)
             else:
                 frameskip = 1
+        list_imgs = []
 
-        list_img = []
+        percent = 0
+        ts = datetime.datetime.now()
+        list_dt_compute = []
         for t in range(0, self.time_steps):
+            prop = t/self.time_steps
+            newpercent = math.floor(prop*Simulation.PERCENT_MAX)
+            if (newpercent != percent) and self.log: # update the console
+                newts = datetime.datetime.now()
+                dtcompute = (newts - ts).total_seconds()
+                elapsed = sum(list_dt_compute)
+                list_dt_compute.append(dtcompute)
+                print("{}/{} [{}{}] {:.3}s left".format(int(percent), int(Simulation.PERCENT_MAX), "#"*newpercent, "o"*(Simulation.PERCENT_MAX - newpercent), float(elapsed*(1/prop-1))), end="\r")
+                ts = newts
+            percent = newpercent
+            
             if t > 1: # do not update when the timesteps are lower than 1 bc this corresponds to the two initial fields
                 self.s.update()
             f = self.s.field.get_val_time(t)
             pp = self.s.particles.list_pos(tstep=t)
             if anim: # create the images for the animation
                 if t % frameskip == 0:
-                    list_img.append(self.instant_img(template_anim.copy(), f, pp, t))
+                    img = self.instant_img(template_anim.copy(), f, pp, t)
+                    thisimgpath = self.img_file_path(path, t)
+                    img.save(thisimgpath)
+                    list_imgs.append(thisimgpath)
             if file: # append the current field to the file
                 fstr = Simulation.list2str(f)
                 pstr = Simulation.list2str(pp)
                 ff.write("{}\n".format(fstr))
                 pf.write("{}\n".format(pstr))
-            print("{}/{}".format(t, self.time_steps)) if self.log else None
+        print("")
+        
         if anim:
-            print("animation finalisation...") if self.log else None
-            self.create_anim(list_img, path, id_img=timestamp, fdur=fdur)
+            print("video output creation...") if self.log else None
+            frame = cv2.imread(list_imgs[0])
+            height, width, layers = frame.shape
+            videopath = os.path.join(path, "{}-{}-UNCOMPRESSED.mp4".format(Simulation.VID_PREFIX, timestamp))
+            videopath_compressed = os.path.join(path, "{}-{}.mp4".format(Simulation.VID_PREFIX, timestamp))
+            video = cv2.VideoWriter(videopath, cv2.VideoWriter_fourcc(*'mp4v'), 60, (width,height))
+            total_frames = len(list_imgs)
+            for img, i in zip(list_imgs, range(0, total_frames)):
+                print("{}/{} images computed".format(i, total_frames), end="\r")
+                video.write(cv2.imread(img))
+                for r in range(64):
+                    try:
+                        os.remove(img)
+                        break
+                    except:
+                        pass
+            cv2.destroyAllWindows()
+            video.release()
+            video = ffmpeg.input(videopath)
+            video = ffmpeg.output(video, videopath_compressed, vcodec="h264")
+            ffmpeg.run(video)
+            os.remove(videopath)
         if file:
             print("output file finalisation...") if self.log else None
 
@@ -170,15 +215,16 @@ class Simulation:
         begs = px[0]
         ends = px[-1]
         line_vals = list(line_vals)
-
         ctxt = (255, 0, 0)
-        crep = (32, 32, 32)
+        crep = (0, 0, 255)
+        cgray = (64, 64, 64)
         cwhite = (255, 255, 255)
         cm_in_pix = pix_per_m*0.01
         cm_scaled = int(cm_in_pix*yscale)
-        d.line([begs, oy, ends, oy], fill=crep) #horizontal
+        d.line([begs, oy, ends, oy], fill=cgray) #horizontal
         d.line(line_vals, fill=cwhite) # string
-        d.line([ends, oy - cm_scaled, ends, oy + cm_scaled], fill=crep) # scale line
+        d.line([ends, oy - cm_scaled, ends, oy + cm_scaled], fill=crep) # scale y line
+        d.line([ends, oy + cm_scaled, ends - cm_in_pix, oy + cm_scaled], fill=crep) # unscale x line
         d.text((ends - 15, oy - cm_scaled - 15), "1cm", fill=crep) # +text scale
         d.multiline_text((2, 2), "L={:.3}m rho={:.3}kg/m T={:.3}N c={:.3}m/s\nt={:0<6}s".format(self.s.length, self.s.linear_density, self.s.tension, self.s.celerity, round(tstep*self.dt, 6)), fill=ctxt)
         for p in particles_pos:
@@ -205,7 +251,6 @@ class Simulation:
         pathgif = "{}\\{}-{}.webp".format(path, Simulation.IMG_PREFIX, suffix)
         list_images[0].save(pathgif, duration=[fdur]*len(list_images), save_all=True, append_images=list_images[1:], optimize=False, loop=0)
         return pathgif
-
 
 class RestString(Simulation):
     """

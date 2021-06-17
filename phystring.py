@@ -101,7 +101,6 @@ class PhyString:
 
         dEdx = self.linear_energy(last_val, llast_val, last_val_p, last_val_m, rho, kappa)
         E = self.length*np.sum(dEdx)
-        print(E)
 
         newval = self.field_evo(last_val, llast_val, last_val_p, last_val_m, rho, kappa) # evolution of the string according to the equations
         newval = self.apply_edge(newval, tstep + 1) # apply the conditions at both of the edges 
