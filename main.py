@@ -6,7 +6,7 @@ import os
 mypath = os.path.dirname(os.path.abspath(__file__))
 mypath = "C:\\Users\\leog\\Desktop\\lg2021stage\\output" # A CHANGER BIEN SUR
 
-duration = 20.0 # duration of simulation [s]
+duration = 1.0 # duration of simulation [s]
 L = 1.0 # [m]
 T = 10.0 # [N]
 rho = 0.35 # [kg/m]
@@ -31,6 +31,6 @@ right = MirrorEdge()
 
 simu = simulation.CenterFixed(dt, time_steps, space_steps, L, rho, T, left, right, mass_particle, pulsation_particle, log=True)
 # simu = simulation.FreeString(dt, time_steps, space_steps, L, rho, T, left, right, log=True)
-simu.run(mypath, anim=False, file=True, log=False, frameskip=False)
+simu.run(mypath, anim=True, file=False, log=False, frameskip=True)
 
 
