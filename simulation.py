@@ -61,13 +61,19 @@ class Simulation:
         self.s = PhyString(string_len, string_discret, dt, string_density, string_tension, edge_left, edge_right, ic_pos, ic_vel, particles)
     
     def __repr__(self):
-        return "[SIMULATION]    Δt={}s, Δx={}m, time steps={}, string steps (nb discretisation)={}; ".format(self.s.dt, self.s.dx, self.time_steps, self.s.nb_linear_steps)
+        return "[SIMULATION]    Δt={}s, Δx={}m, time steps={}, string steps (nb discretisation)={}\n{}\n{}".format(
+            self.s.dt, 
+            self.s.dx, 
+            self.time_steps, 
+            self.s.nb_linear_steps,
+            self.s,
+            self.s.particles)
 
     def img_file_path(self, path: str, i: int):
         nb_str = str(i).zfill(Simulation.NB_ZEROS)
         return "{}\\{}{}.{}".format(path, Simulation.IMG_PREFIX, nb_str, Simulation.IMG_FORMAT)
 
-    def run(self, path: str, anim=True, file=True, log=True, dpi=96, res=(480, 320), frameskip=True):
+    def run(self, path: str, anim=True, file=True, log=True, dpi=96, res=(480, 320), frameskip=True, yscale=5.0, window_anim=False):
         """
             Runs the simulation with options to save it as a animation and/or in a file
 
@@ -76,7 +82,7 @@ class Simulation:
         """
         dtnow = datetime.datetime.now()
         timestamp = int(dtnow.timestamp())
-        print("SIMULATION:") if self.log else None
+        print(self) if self.log else None
 
         if file:
             ffn = "QuantumString-field_{}.txt".format(timestamp)
@@ -91,22 +97,32 @@ class Simulation:
         cblack = (0, 0, 0)
         template_anim = Image.new('RGB', res, color=cblack)
 
+        render_len = self.s.length
+        render_nbcells = self.s.nb_linear_steps
+        render_cellstart, render_cellstop = 0, render_nbcells
+        a = 0.0
         if anim:
-            pairoddlist = [i for i in range(0, 2*self.s.nb_linear_steps)]
+            if window_anim != False:
+                a, b = window_anim[0], window_anim[1]
+                render_cellstart, render_cellstop = int(a/self.s.dx), int(b/self.s.dx)
+                render_nbcells = render_cellstop - render_cellstart
+                render_len = render_nbcells*self.s.dx
+                
+            pairoddlist = [i for i in range(0, 2*render_nbcells)]
             pairoddlist = np.array(pairoddlist)
             self.anim_params = {
-                "max_frames": 500,
-                "margin": 15,
+                "max_frames": 1500,
+                "margin": 0,
                 "mass_rad": 3,
                 "wh": res,
-                "linx": np.linspace(0, self.s.length, self.s.nb_linear_steps),
+                "linx": np.linspace(0.0, render_len, render_nbcells),
                 "forx": pairoddlist % 2 == 0,
                 "fory": pairoddlist % 2 == 1,
                 "origin": None,
                 "pix_per_m": None
             }
             self.anim_params["origin"] = (self.anim_params["margin"], int(0.5*res[1]))
-            self.anim_params["pix_per_m"] = int(res[0]/self.s.length) - self.anim_params["margin"]*2
+            self.anim_params["pix_per_m"] = res[0]/render_len
 
             if type(frameskip) == bool and frameskip:
                 max_frames = self.anim_params["max_frames"]
@@ -127,7 +143,8 @@ class Simulation:
                 dtcompute = (newts - ts).total_seconds()
                 elapsed = sum(list_dt_compute)
                 list_dt_compute.append(dtcompute)
-                print("{}/{} [{}{}] {:.3}s left".format(int(percent), int(Simulation.PERCENT_MAX), "#"*newpercent, "o"*(Simulation.PERCENT_MAX - newpercent), float(elapsed*(1/prop-1))), end="\r")
+                load = t % 4
+                print("{:2}% {} {:.4f}s left                ".format(int(percent/Simulation.PERCENT_MAX*100), "|/-\\"[load:load+1],  float(elapsed*(1/prop-1))), end="\r")
                 ts = newts
             percent = newpercent
             
@@ -137,7 +154,9 @@ class Simulation:
             pp = self.s.particles.list_pos(tstep=t)
             if anim: # create the images for the animation
                 if t % frameskip == 0:
-                    img = self.instant_img(template_anim.copy(), f, pp, t)
+                    f_render = f[render_cellstart:render_cellstop]
+                    pp_render = pp - render_cellstart
+                    img = self.instant_img(template_anim.copy(), f_render, pp_render, t, yscale=yscale)
                     thisimgpath = self.img_file_path(path, t)
                     img.save(thisimgpath)
                     list_imgs.append(thisimgpath)
@@ -187,7 +206,7 @@ class Simulation:
         """
         return str(l).replace("[", "").replace("]", "").replace("\n", "")
     
-    def instant_img(self, baseimg: Image, field: list, particles_pos: list, tstep: int, yscale=5.0) -> Image:
+    def instant_img(self, baseimg: Image, field: list, particles_pos: list, tstep: int, yscale=1.0) -> Image:
         """
             Creates an image of the current state of the simulation
 
@@ -207,7 +226,7 @@ class Simulation:
         linx = self.anim_params["linx"]
         forx = self.anim_params["forx"]
         fory = self.anim_params["fory"]
-        line_vals = np.zeros(shape=2*self.s.nb_linear_steps).astype(int)
+        line_vals = np.zeros(shape=2*field.shape[-1]).astype(int)
         px = (linx*pix_per_m + ox).astype(int)
         py = (-field*pix_per_m*yscale + oy).astype(int)
         line_vals[forx] = px
@@ -226,10 +245,12 @@ class Simulation:
         d.line([ends, oy - cm_scaled, ends, oy + cm_scaled], fill=crep) # scale y line
         d.line([ends, oy + cm_scaled, ends - cm_in_pix, oy + cm_scaled], fill=crep) # unscale x line
         d.text((ends - 15, oy - cm_scaled - 15), "1cm", fill=crep) # +text scale
-        d.multiline_text((2, 2), "L={:.3}m rho={:.3}kg/m T={:.3}N c={:.3}m/s\nt={:0<6}s".format(self.s.length, self.s.linear_density, self.s.tension, self.s.celerity, round(tstep*self.dt, 6)), fill=ctxt)
+        d.multiline_text((2, 2), "{}\n{}".format(self.s, str(self.s.particles).replace(";", "\n")), fill=ctxt)
+        d.text((baseimg.size[0] - 70, baseimg.size[1] - 30), "t={:0<6}".format(round(tstep*self.dt, 6)), fill=ctxt)
         for p in particles_pos:
-            pos = (px[p], py[p])
-            d.ellipse([pos[0] - mass_rad, pos[1] - mass_rad, pos[0] + mass_rad, pos[1] + mass_rad], fill=(255, 0, 0))
+            if 0 <= p < len(linx):
+                pos = (px[p], py[p])
+                d.ellipse([pos[0] - mass_rad, pos[1] - mass_rad, pos[0] + mass_rad, pos[1] + mass_rad], fill=(255, 0, 0))
         return baseimg
     
     def create_anim(self, list_images: list, path: str, id_img=0, fdur=12) -> str:

@@ -31,7 +31,7 @@ class Particle:
         pos_next = pos
 
         if not 0 <= pos < nb_linear_steps:
-            raise ValueError("Wrong initial condition for particle!")
+            raise ValueError("Cell position of particle {} is not on the string [0, {}]".format(pos, nb_linear_steps - 1))
 
         if not fixed:
             raise NotImplementedError("Moving particles not implemented yet! :(")
@@ -77,7 +77,7 @@ class Particles:
     def __repr__(self):
         s = "[PARTICLES]    "
         for (p, i) in zip(self.particles, range(0, self.particles_quantity)):
-            s += "{}: m={}kg, ω={}rad/s ; ".format(i, p.mass, p.pulsation)
+            s += "{0}: m={1:.2f}kg, omega={2:.2f}rad/s;".format(i, p.mass, p.pulsation)
         return s
     
     def update(self):

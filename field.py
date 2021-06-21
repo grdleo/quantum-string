@@ -1,5 +1,6 @@
 import numpy as np
 from numpy import ndarray
+import scipy
 
 class OneSpaceField:
     """
@@ -98,3 +99,21 @@ class OneSpaceField:
             :return: field at the time t₁-1, where t₁ is the current time step of the field
         """
         return self.get_val_time(self._last_tstep - 1)
+    
+    def space_fft(self, xwindow: tuple, t: int, dx: float) -> tuple:
+        a, b = int(xwindow[0]), int(xwindow[1])
+        field = self.get_val_time(t)
+        signal = field[a:b]
+        n = signal.shape[-1]
+        fft = scipy.ftt.ftt(signal)
+        fftfreq = scipy.fft.fttfreq(n, d=dx)
+        return fft, fftfreq
+    
+    def time_fft(self, twindow: tuple, x: int, dt: float) -> tuple:
+        a, b = int(twindow[0]), int(twindow[1])
+        field = self.get_val_pos(x)
+        signal = field[a:b]
+        n = signal.shape[-1]
+        fft = scipy.ftt.ftt(signal)
+        fftfreq = scipy.fft.fttfreq(n, d=dt)
+        return fft, fftfreq

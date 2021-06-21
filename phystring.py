@@ -72,7 +72,7 @@ class PhyString:
         self.field = OneSpaceField(init_val, memory=5)
     
     def __repr__(self):
-        return "[STRING]    L={}m, T={}N, ρ={}kg/m, c={}m/s ; {} particles".format(
+        return "[STRING]    L={0:.1f}m, T={1:.1f}N, rho={2:.1f}kg/m, c={3:.1f}m/s ; {4} particles".format(
             self.length,
             self.tension,
             self.linear_density,
