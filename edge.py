@@ -23,6 +23,18 @@ class ExcitatorEdge(Edge):
     def __init__(self, excitation):
         super().__init__()
         self.condition = excitation
+    
+    def __add__(self, other):
+        sumcond = lambda tstep: self.condition(tstep) + other.conditiont(tstep)
+        return ExcitatorEdge(sumcond)
+    
+    def __sub__(self, other):
+        difcond = lambda tstep: self.condition(tstep) - other.conditiont(tstep)
+        return ExcitatorEdge(difcond)
+    
+    def __mul__(self, other):
+        prodcond = lambda tstep: self.condition(tstep)*other.conditiont(tstep)
+        return ExcitatorEdge(prodcond)
 
 class ExcitatorSin(ExcitatorEdge):
     def __init__(self, dt: float, amplitude: float, pulsation: float, phase: float):

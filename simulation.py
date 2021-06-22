@@ -21,7 +21,7 @@ class Simulation:
     VID_PREFIX = "QuantumString"
     NB_ZEROS = 8
     IMG_FORMAT = "png"
-    PERCENT_MAX = 100
+    PERCENT_MAX = 256
 
     def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, ic_pos: list, ic_vel: list, particles, log=True):
         """
@@ -73,7 +73,7 @@ class Simulation:
         nb_str = str(i).zfill(Simulation.NB_ZEROS)
         return "{}\\{}{}.{}".format(path, Simulation.IMG_PREFIX, nb_str, Simulation.IMG_FORMAT)
 
-    def run(self, path: str, anim=True, file=True, log=True, dpi=96, res=(480, 320), frameskip=True, yscale=5.0, window_anim=False):
+    def run(self, path: str, anim=True, file=True, res=(480, 320), frameskip=True, yscale=5.0, window_anim=False):
         """
             Runs the simulation with options to save it as a animation and/or in a file
 
@@ -136,6 +136,9 @@ class Simulation:
         ts = datetime.datetime.now()
         list_dt_compute = []
         for t in range(0, self.time_steps):
+            if t > 1: # do not update when the timesteps are lower than 1 bc this corresponds to the two initial fields
+                self.s.update() # update the string
+            
             prop = t/self.time_steps
             newpercent = math.floor(prop*Simulation.PERCENT_MAX)
             if (newpercent != percent) and self.log: # update the console
@@ -143,13 +146,12 @@ class Simulation:
                 dtcompute = (newts - ts).total_seconds()
                 elapsed = sum(list_dt_compute)
                 list_dt_compute.append(dtcompute)
-                load = t % 4
-                print("{:2}% {} {:.4f}s left                ".format(int(percent/Simulation.PERCENT_MAX*100), "|/-\\"[load:load+1],  float(elapsed*(1/prop-1))), end="\r")
+                spinner = ".ₒoO0Ooₒ" # "←↖↑↗→↘↓↙"
+                load = percent % len(spinner)
+                print("{:2}% {} {:.4f}s left                ".format(int(percent/Simulation.PERCENT_MAX*100), spinner[load:load+1],  float(elapsed*(1/prop-1))), end="\r")
                 ts = newts
             percent = newpercent
             
-            if t > 1: # do not update when the timesteps are lower than 1 bc this corresponds to the two initial fields
-                self.s.update()
             f = self.s.field.get_val_time(t)
             pp = self.s.particles.list_pos(tstep=t)
             if anim: # create the images for the animation
@@ -176,7 +178,7 @@ class Simulation:
             video = cv2.VideoWriter(videopath, cv2.VideoWriter_fourcc(*'mp4v'), 60, (width,height))
             total_frames = len(list_imgs)
             for img, i in zip(list_imgs, range(0, total_frames)):
-                print("{}/{} images computed".format(i, total_frames), end="\r")
+                print("{}/{} images computed".format(i, total_frames), end="\r") if self.log else None
                 video.write(cv2.imread(img))
                 for r in range(64):
                     try:

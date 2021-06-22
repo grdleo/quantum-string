@@ -117,3 +117,21 @@ class OneSpaceField:
         fft = scipy.ftt.ftt(signal)
         fftfreq = scipy.fft.fttfreq(n, d=dt)
         return fft, fftfreq
+
+    @staticmethod
+    def retrieve_sines(self, fft: list, fftfreq: list, h=0.0001):
+        n = fftfreq.shape[-1]
+        trunc_n = 0.5*n
+        trunc_n += 1 if n % 2 != 0 else 0
+        pos_fft = fft[trunc_n:n]
+        pos_fftfreq = fftfreq[trunc_n:n]
+        pos_spectrum = 2*np.abs(fft/n)[trunc_n:n]
+        idx_peaks, _ = scipy.signal.find_peaks(pos_spectrum, height=h)
+        freq_peaks = pos_fftfreq[idx_peaks]
+        amp_peaks = pos_spectrum[idx_peaks]
+        phase_peaks = np.angle(pos_fft)[idx_peaks]
+        return {
+            "frequency": freq_peaks,
+            "amplitude": amp_peaks,
+            "phase": phase_peaks
+        }
