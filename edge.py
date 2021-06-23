@@ -37,13 +37,19 @@ class ExcitatorEdge(Edge):
         return ExcitatorEdge(prodcond)
 
 class ExcitatorSin(ExcitatorEdge):
-    def __init__(self, dt: float, amplitude: float, pulsation: float, phase: float):
-        sin = lambda tstep: amplitude*np.sin(pulsation*tstep*dt + phase)
+    def __init__(self, dt: float, amplitude: float, pulsation: float, delay: float):
+        steps_delay = int(np.round(delay/dt))
+        def sin(tstep):
+            delayed = tstep - steps_delay
+            return amplitude*np.sin(pulsation*delayed*dt) if delayed >= 0 else 0.0
         super().__init__(sin)
 
 class ExcitatorSinPeriod(ExcitatorEdge):
-    def __init__(self, dt: float, amplitude: float, pulsation: float, phase: float, nb_periods=1):
-        sin = lambda tstep: amplitude*np.sin(pulsation*tstep*dt + phase) if tstep*dt <= nb_periods*2*np.pi/pulsation else 0.0
+    def __init__(self, dt: float, amplitude: float, pulsation: float, delay: float, nb_periods=1):
+        steps_delay = int(np.round(delay/dt))
+        def sin(tstep):
+            delayed = tstep - steps_delay
+            return amplitude*np.sin(pulsation*delayed*dt) if delayed >= 0 and delayed*dt <= nb_periods*2*np.pi/pulsation else 0.0
         super().__init__(sin)
 
 class ExcitatorPulse(ExcitatorEdge):

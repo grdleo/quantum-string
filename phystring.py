@@ -2,6 +2,7 @@ import numpy as np
 
 from field import OneSpaceField 
 from edge import Edge, ExcitatorEdge
+from particle import Particles
 
 from fractions import Fraction
 
@@ -9,7 +10,7 @@ class PhyString:
     """
         Class for the simulation of the string
     """
-    def __init__(self, length: float, nb_linear_steps: int, dt: float, linear_density: float, tension: float, edge_left: Edge, edge_right: Edge, ic_pos: list, ic_vel: list, particles):
+    def __init__(self, length: float, nb_linear_steps: int, dt: float, linear_density: float, tension: float, edge_left: Edge, edge_right: Edge, ic_pos: list, ic_vel: list, particles: Particles, memory_field=5):
         """
             Initialisation of the string
 
@@ -23,6 +24,7 @@ class PhyString:
             :param ic_pos: initial condition of the position of the string
             :param ic_vel: initial condition of the velocity of the string
             :param particles: Particles object 
+            :param memory_field:
 
             :type length: float
             :type nb_linear_steps: int
@@ -35,6 +37,7 @@ class PhyString:
             :type ic_pos: list
             :type ic_vel: list
             :type particles: Particles object 
+            :type memory_field: int
         """
         self.dx = length/float(nb_linear_steps)
         self.invdx2 = 1/self.dx**2
@@ -69,7 +72,7 @@ class PhyString:
         ic_pos1 = self.apply_edge(ic_pos1, 1)
 
         init_val = np.vstack((ic_pos, ic_pos1))
-        self.field = OneSpaceField(init_val, memory=5)
+        self.field = OneSpaceField(init_val, memory=memory_field)
     
     def __repr__(self):
         return "[STRING]    L={0:.1f}m, T={1:.1f}N, rho={2:.1f}kg/m, c={3:.1f}m/s ; {4} particles".format(

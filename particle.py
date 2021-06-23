@@ -6,6 +6,9 @@ class Particle:
     """
         A class to create a particle to be on the string
     """
+    STR_MASS = "m"
+    STR_PULSATION = "omega"
+
     def __init__(self, pos: int, vel: float, mass: float, pulsation: float, fixed: bool, nb_linear_steps: int):
         """
             Initalises a particle
@@ -39,6 +42,12 @@ class Particle:
         init_val =np.vstack((pos, pos_next))
         self.pos = OneSpaceField(init_val, memory=5)
     
+    def infos(self):
+        return {
+            Particle.STR_MASS: self.mass,
+            Particle.STR_PULSATION: self.pulsation
+        }
+    
     def update(self):
         """
             Updates the particle
@@ -65,6 +74,7 @@ class Particles:
         self.nb_linear_steps = nb_linear_steps
         self.particles_quantity = len(particles)
         self.free_particles = False # if True, at least one particle is moving 
+        self.particles = []
         if self.particles_quantity != 0:
             self.empty = False
             self.particles = particles
@@ -73,6 +83,12 @@ class Particles:
                     self.free_particles = True
                 if p.nb_linear_steps != self.nb_linear_steps:
                     raise ValueError("Some particles are on different strings!")
+    
+    def infos(self):
+        a = []
+        for p in self.particles:
+            a.append(p.infos())
+        return a
     
     def __repr__(self):
         s = "[PARTICLES]    "

@@ -1,6 +1,6 @@
 from phystring import PhyString
 from particle import Particle, Particles
-from edge import Edge
+from edge import Edge, MirrorEdge
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,6 +12,7 @@ import os
 import math
 import time
 import datetime
+import json
 
 class Simulation:
     """
@@ -23,7 +24,15 @@ class Simulation:
     IMG_FORMAT = "png"
     PERCENT_MAX = 256
 
-    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, ic_pos: list, ic_vel: list, particles, log=True):
+    STR_DT = "dt"
+    STR_DX = "dx"
+    STR_TIMESTEPS = "nt"
+    STR_SPACESTEPS = "dx"
+    STR_TENSION = "T"
+    STR_DENSITY = "rho"
+    STR_LENGTH = "L"
+
+    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, ic_pos: list, ic_vel: list, particles, memory_field=5, log=True):
         """
             Initialisation of the simulation
 
@@ -38,6 +47,7 @@ class Simulation:
             :param ic_pos: initial condition of the position of the string
             :param ic_vel: initial condition of the velocity of the string
             :param particles: Particles object
+            :param memory_field:
             :param log: if True, prints the simulation loading
 
             :type dt: float
@@ -51,14 +61,30 @@ class Simulation:
             :type ic_pos: list
             :type ic_vel: list
             :type particles: Particles object
+            :type memory_field: int
             :type log: bool
 
         """
         self.log = log
         self.time_steps = time_steps
         self.dt = dt
+        self.time = str(datetime.datetime.now())
 
-        self.s = PhyString(string_len, string_discret, dt, string_density, string_tension, edge_left, edge_right, ic_pos, ic_vel, particles)
+        self.s = PhyString(string_len, string_discret, dt, string_density, string_tension, edge_left, edge_right, ic_pos, ic_vel, particles, memory_field=memory_field)
+    
+    def infos(self):
+        return {
+            "desc": "QUANTUM STRING SIMULATION",
+            "date": self.time,
+            Simulation.STR_DT: self.s.dt,
+            Simulation.STR_DX: self.s.dx,
+            Simulation.STR_TIMESTEPS: self.time_steps,
+            Simulation.STR_SPACESTEPS: self.s.nb_linear_steps,
+            Simulation.STR_LENGTH: self.s.length,
+            Simulation.STR_TENSION: self.s.tension,
+            Simulation.STR_DENSITY: self.s.linear_density,
+            "particles": self.s.particles.infos()
+        }
     
     def __repr__(self):
         return "[SIMULATION]    Δt={}s, Δx={}m, time steps={}, string steps (nb discretisation)={}\n{}\n{}".format(
@@ -73,26 +99,30 @@ class Simulation:
         nb_str = str(i).zfill(Simulation.NB_ZEROS)
         return "{}\\{}{}.{}".format(path, Simulation.IMG_PREFIX, nb_str, Simulation.IMG_FORMAT)
 
-    def run(self, path: str, anim=True, file=True, res=(480, 320), frameskip=True, yscale=5.0, window_anim=False):
+    def run(self, path: str, anim=True, file=True, res=(480, 320), frameskip=True, yscale=5.0, window_anim=False) -> tuple:
         """
             Runs the simulation with options to save it as a animation and/or in a file
 
             :param path: path for the simulation to be saved
             :type path: str
+
+            :return: a tuple containing the path for the field file and the particles file
+            :rtype: tuple
         """
         dtnow = datetime.datetime.now()
         timestamp = int(dtnow.timestamp())
+        jsoninfos = json.dumps(self.infos())
         print(self) if self.log else None
 
+        field_file_path = os.path.join(path, "QuantumString-field_{}.txt".format(timestamp))
+        particles_file_path = os.path.join(path, "QuantumString-particles_{}.txt".format(timestamp))
+
         if file:
-            ffn = "QuantumString-field_{}.txt".format(timestamp)
-            pfn = "QuantumString-particles_{}.txt".format(timestamp)
-            idtxtfield = "QUANTUM STRING SIMULATION ({}): {} {}\n".format(dtnow.isoformat(), self, self.s)
-            idtxtparts = "QUANTUM STRING SIMULATION ({}): {} {}\n".format(dtnow.isoformat(), self, self.s.particles)
-            ff = open("{}\\{}".format(path, ffn), "w", encoding="utf-8")
-            pf = open("{}\\{}".format(path, pfn), "w", encoding="utf-8")
-            ff.write(idtxtfield)
-            pf.write(idtxtparts)
+            begtxt = "{}\n".format(jsoninfos)
+            ff = open(field_file_path, "w", encoding="utf-8")
+            pf = open(particles_file_path, "w", encoding="utf-8")
+            ff.write(begtxt)
+            pf.write(begtxt)
         
         cblack = (0, 0, 0)
         template_anim = Image.new('RGB', res, color=cblack)
@@ -100,11 +130,10 @@ class Simulation:
         render_len = self.s.length
         render_nbcells = self.s.nb_linear_steps
         render_cellstart, render_cellstop = 0, render_nbcells
-        a = 0.0
         if anim:
             if window_anim != False:
                 a, b = window_anim[0], window_anim[1]
-                render_cellstart, render_cellstop = int(a/self.s.dx), int(b/self.s.dx)
+                render_cellstart, render_cellstop = int(a*render_len/self.s.dx), int(b*render_len/self.s.dx)
                 render_nbcells = render_cellstop - render_cellstart
                 render_len = render_nbcells*self.s.dx
                 
@@ -146,7 +175,7 @@ class Simulation:
                 dtcompute = (newts - ts).total_seconds()
                 elapsed = sum(list_dt_compute)
                 list_dt_compute.append(dtcompute)
-                spinner = ".ₒoO0Ooₒ" # "←↖↑↗→↘↓↙"
+                spinner = "←↖↑↗→↘↓↙" # ".ₒoO0Ooₒ"
                 load = percent % len(spinner)
                 print("{:2}% {} {:.4f}s left                ".format(int(percent/Simulation.PERCENT_MAX*100), spinner[load:load+1],  float(elapsed*(1/prop-1))), end="\r")
                 ts = newts
@@ -193,8 +222,7 @@ class Simulation:
             ffmpeg.run(video)
             os.remove(videopath)
         if file:
-            print("output file finalisation...") if self.log else None
-
+            return field_file_path, particles_file_path
     @staticmethod
     def list2str(l: list):
         """
@@ -206,7 +234,7 @@ class Simulation:
             :return: list converted into string
             :rtype: str
         """
-        return str(l).replace("[", "").replace("]", "").replace("\n", "")
+        return str(list(l)).replace("[", "").replace("]", "").replace(" ", "").replace("\n", "")
     
     def instant_img(self, baseimg: Image, field: list, particles_pos: list, tstep: int, yscale=1.0) -> Image:
         """
@@ -279,25 +307,36 @@ class RestString(Simulation):
     """
         Abstraction of Simulation: the initial field is at rest
     """
-    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, particles, log=True):
+    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, particles, log=True, memory_field=5):
         ic_pos = [0]*string_discret
         ic_vel = ic_pos.copy()
-        super().__init__(dt, time_steps,  string_discret, string_len, string_density, string_tension, edge_left, edge_right, ic_pos, ic_vel, particles, log=log)
+        super().__init__(dt, time_steps,  string_discret, string_len, string_density, string_tension, edge_left, edge_right, ic_pos, ic_vel, particles, log=log, memory_field=memory_field)
 
 class FreeString(RestString):
     """
         Abstraction of RestString: the system is particle free
     """
-    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, log=True):
+    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, log=True, memory_field=5):
         particles = Particles(string_discret, [])
-        super().__init__(dt, time_steps, string_discret, string_len, string_density, string_tension, edge_left, edge_right, particles, log=log)
+        super().__init__(dt, time_steps, string_discret, string_len, string_density, string_tension, edge_left, edge_right, particles, log=log, memory_field=memory_field)
 
 class CenterFixed(RestString):
     """
         Abstraction of RestString: the system has a single particle in the center of the string
     """
-    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, mass_particle: float, pulsation_particle: float, log=True):
+    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, mass_particle: float, pulsation_particle: float, log=True, memory_field=5):
         center_string = math.floor(string_discret*0.5)
         p = Particle(center_string, 0.0, mass_particle, pulsation_particle, True, string_discret)
         particles = Particles(string_discret, [p])
-        super().__init__(dt, time_steps, string_discret, string_len, string_density, string_tension, edge_left, edge_right, particles, log=log)
+        super().__init__(dt, time_steps, string_discret, string_len, string_density, string_tension, edge_left, edge_right, particles, log=log, memory_field=memory_field)
+
+class Cavity(Simulation):
+    """
+        Abstraction of Simulation: mirrors in both ends, initial position given but initial velocity = 0
+    """
+    def __init__(self, dt: float, time_steps: int, string_discret: int, string_len: float, string_density: float, string_tension: float, ic_pos: list, particles: Particles, log=True, memory_field=5):
+        ml, mr = MirrorEdge(), MirrorEdge()
+        ic_pos = np.array(ic_pos)
+        ic_vel = [0]*len(ic_pos)
+        ic_vel = np.array(ic_vel)
+        super().__init__(dt, time_steps, string_discret, string_len, string_density, string_tension, ml, mr, ic_pos, ic_vel, particles, log=log, memory_field=memory_field)

@@ -1,6 +1,8 @@
 import numpy as np
 from numpy import ndarray
 import scipy
+import scipy.signal
+from matplotlib import pyplot as plt
 
 class OneSpaceField:
     """
@@ -100,22 +102,26 @@ class OneSpaceField:
         """
         return self.get_val_time(self._last_tstep - 1)
     
-    def space_fft(self, xwindow: tuple, t: int, dx: float) -> tuple:
-        a, b = int(xwindow[0]), int(xwindow[1])
+    def space_fft(self, t: int, dx: float, xwindow=False) -> tuple:
+        a, b = 0, self.val.shape[1]
+        if xwindow != False:
+            a, b = int(xwindow[0]), int(xwindow[1])
         field = self.get_val_time(t)
         signal = field[a:b]
         n = signal.shape[-1]
-        fft = scipy.ftt.ftt(signal)
-        fftfreq = scipy.fft.fttfreq(n, d=dx)
+        fft = scipy.fft.fft(signal)
+        fftfreq = scipy.fft.fftfreq(n, d=dx)
         return fft, fftfreq
     
-    def time_fft(self, twindow: tuple, x: int, dt: float) -> tuple:
-        a, b = int(twindow[0]), int(twindow[1])
+    def time_fft(self, x: int, dt: float, twindow=False) -> tuple:
+        a, b = 0, self.val.shape[0]
+        if twindow != False:
+            a, b = int(twindow[0]), int(twindow[1])
         field = self.get_val_pos(x)
         signal = field[a:b]
         n = signal.shape[-1]
-        fft = scipy.ftt.ftt(signal)
-        fftfreq = scipy.fft.fttfreq(n, d=dt)
+        fft = scipy.fft.fft(signal)
+        fftfreq = scipy.fft.fftfreq(n, d=dt)
         return fft, fftfreq
 
     @staticmethod
@@ -135,3 +141,16 @@ class OneSpaceField:
             "amplitude": amp_peaks,
             "phase": phase_peaks
         }
+    
+    def spectrogram(self, xwindow=False):
+        windowed_signal = self.val
+        if type(xwindow) == tuple:
+            a, b = int(xwindow[0]), int(xwindow[1])
+            windowed_signal = self.val[:,a:b]
+        nbcells = windowed_signal.shape[1]
+        tocompute_signal = windowed_signal.reshape(windowed_signal.size)
+        f, t, Sxx = scipy.signal.spectrogram(tocompute_signal, nperseg=nbcells, noverlap=0)
+        plt.pcolormesh(t, f, Sxx, shading='gouraud')
+        plt.ylabel('Frequency [Hz]')
+        plt.xlabel('Time [sec]')
+        plt.show()
