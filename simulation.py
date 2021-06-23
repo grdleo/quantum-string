@@ -27,7 +27,7 @@ class Simulation:
     STR_DT = "dt"
     STR_DX = "dx"
     STR_TIMESTEPS = "nt"
-    STR_SPACESTEPS = "dx"
+    STR_SPACESTEPS = "nx"
     STR_TENSION = "T"
     STR_DENSITY = "rho"
     STR_LENGTH = "L"
