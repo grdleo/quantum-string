@@ -200,27 +200,7 @@ class Simulation:
         
         if anim:
             print("video output creation...") if self.log else None
-            frame = cv2.imread(list_imgs[0])
-            height, width, layers = frame.shape
-            videopath = os.path.join(path, "{}-{}-UNCOMPRESSED.mp4".format(Simulation.VID_PREFIX, timestamp))
-            videopath_compressed = os.path.join(path, "{}-{}.mp4".format(Simulation.VID_PREFIX, timestamp))
-            video = cv2.VideoWriter(videopath, cv2.VideoWriter_fourcc(*'mp4v'), 60, (width,height))
-            total_frames = len(list_imgs)
-            for img, i in zip(list_imgs, range(0, total_frames)):
-                print("{}/{} images computed".format(i, total_frames), end="\r") if self.log else None
-                video.write(cv2.imread(img))
-                for r in range(64):
-                    try:
-                        os.remove(img)
-                        break
-                    except:
-                        pass
-            cv2.destroyAllWindows()
-            video.release()
-            video = ffmpeg.input(videopath)
-            video = ffmpeg.output(video, videopath_compressed, vcodec="h264")
-            ffmpeg.run(video)
-            os.remove(videopath)
+            Simulation.create_video(list_imgs, path, title=Simulation.VID_PREFIX, log=self.log, timestamp=timestamp)
         if file:
             return field_file_path, particles_file_path
     @staticmethod
@@ -282,26 +262,34 @@ class Simulation:
                 pos = (px[p], py[p])
                 d.ellipse([pos[0] - mass_rad, pos[1] - mass_rad, pos[0] + mass_rad, pos[1] + mass_rad], fill=(255, 0, 0))
         return baseimg
-    
-    def create_anim(self, list_images: list, path: str, id_img=0, fdur=12) -> str:
+
+    @staticmethod
+    def create_video(list_paths: list, output_path: str, compress=True, title="", fps=60, log=False, timestamp=datetime.datetime.now()):
         """
-            Creates a gif out of the images given
-
-            :param list_images: list of the Pillow images
-            :param path: path for the gif to be created
-            :param id_img: suffix at the end of the name of the image (for identification)
-
-            :type list_images: list
-            :type path: str
-            :type id_img: int
-
-            :return: path of the animation created
-            :rtype: str
+            from a list of image paths, create a video out of it
         """
-        suffix = "" if id_img == 0 else id_img
-        pathgif = "{}\\{}-{}.webp".format(path, Simulation.IMG_PREFIX, suffix)
-        list_images[0].save(pathgif, duration=[fdur]*len(list_images), save_all=True, append_images=list_images[1:], optimize=False, loop=0)
-        return pathgif
+        frame = cv2.imread(list_paths[0])
+        height, width, layers = frame.shape
+        videopath = os.path.join(output_path, "{}-{}-UNCOMPRESSED.mp4".format(title, timestamp))
+        videopath_compressed = os.path.join(output_path, "{}-{}.mp4".format(title, timestamp))
+        video = cv2.VideoWriter(videopath, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width,height))
+        total_frames = len(list_paths)
+        for img, i in zip(list_paths, range(0, total_frames)):
+            print("{}/{} images computed".format(i, total_frames), end="\r") if log else None
+            video.write(cv2.imread(img))
+            for r in range(64):
+                try:
+                    os.remove(img)
+                    break
+                except:
+                    pass
+        cv2.destroyAllWindows()
+        video.release()
+        if compress:
+            video = ffmpeg.input(videopath)
+            video = ffmpeg.output(video, videopath_compressed, vcodec="h264")
+            ffmpeg.run(video)
+            os.remove(videopath)
 
 class RestString(Simulation):
     """

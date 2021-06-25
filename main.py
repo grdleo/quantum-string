@@ -8,11 +8,11 @@ mypath = "C:\\Users\\leog\\Desktop\\lg2021stage\\output" # A CHANGER BIEN SUR
 
 duration = 5.0 # duration of simulation [s]
 length = 1.0 # [m]
-tension = 10.0 # [N]
-density = 0.35 # [kg/m]
-mass_particle = 0.05 # [kg]
-particle_freq = 1.0 # [Hz]
-signal_freq = 5.0 # [Hz]
+tension = 5.0 # [N]
+density = 0.01 # [kg/m]
+mass_particle = 0.01 # [kg]
+particle_freq = 0.5*np.sqrt(25.0/mass_particle)/np.pi # [Hz]
+signal_freq = 10.0 # [Hz]
 sampling_number = 100 # number of samples we will have in a single period (be careful with Shannon condition)
 
 celerity = np.sqrt(tension/density)
@@ -29,10 +29,10 @@ space_steps = int(length/dx)
 length = dx*space_steps # recompute the length in order to be consistent (may be a bit different)
 
 left = ExcitatorSin(dt, 0.01, signal_pulsation, 0.0)
-right = ExcitatorSin(dt, 0.01, signal_pulsation, np.pi/2)
+right = MirrorEdge()
 
 simu = simulation.FreeString(dt, time_steps, space_steps, length, density, tension, left, right, log=True)
 ### simu = simulation.CenterFixed(dt, time_steps, space_steps, length, density, tension, left, right, mass_particle, pulsation_particle, log=True)
-print(simu) # you can check if the simulation is good for you by printing it BEFORE running it...
+# print(simu) # you can check if the simulation is good for you by printing it BEFORE running it...
 
 simu.run(mypath, anim=True, file=True, frameskip=True, yscale=5.0, window_anim=False)

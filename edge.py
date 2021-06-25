@@ -25,15 +25,15 @@ class ExcitatorEdge(Edge):
         self.condition = excitation
     
     def __add__(self, other):
-        sumcond = lambda tstep: self.condition(tstep) + other.conditiont(tstep)
+        sumcond = lambda tstep: self.condition(tstep) + other.condition(tstep)
         return ExcitatorEdge(sumcond)
     
     def __sub__(self, other):
-        difcond = lambda tstep: self.condition(tstep) - other.conditiont(tstep)
+        difcond = lambda tstep: self.condition(tstep) - other.condition(tstep)
         return ExcitatorEdge(difcond)
     
     def __mul__(self, other):
-        prodcond = lambda tstep: self.condition(tstep)*other.conditiont(tstep)
+        prodcond = lambda tstep: self.condition(tstep)*other.condition(tstep)
         return ExcitatorEdge(prodcond)
 
 class ExcitatorSin(ExcitatorEdge):
