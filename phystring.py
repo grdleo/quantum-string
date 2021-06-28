@@ -1,21 +1,25 @@
+from __future__ import annotations
+
 import numpy as np
 
 from field import OneSpaceField 
-from edge import Edge, ExcitatorEdge
+from edge import Edge
 from particle import Particles
 
-from fractions import Fraction
+"""
+    Class for dealing with the actual string
+"""
 
 class PhyString:
     """
         Class for the simulation of the string
     """
-    def __init__(self, length: float, nb_linear_steps: int, dt: float, linear_density: float, tension: float, edge_left: Edge, edge_right: Edge, ic_pos: list, ic_vel: list, particles: Particles, memory_field=5):
+    def __init__(self, length: float, space_steps: int, dt: float, linear_density: float, tension: float, edge_left: Edge, edge_right: Edge, ic_pos: list[float], ic_vel: list[float], particles: Particles, memory_field=5):
         """
             Initialisation of the string
 
             :param length: length of the string [m]
-            :param nb_linear_steps: number of cells in the string
+            :param space_steps: number of cells in the string
             :param dt: value of the time step [s]
             :param linear_density: linear density of the string [kg/m]
             :param tension: tension in the string [kg.m/s²]
@@ -24,24 +28,11 @@ class PhyString:
             :param ic_pos: initial condition of the position of the string
             :param ic_vel: initial condition of the velocity of the string
             :param particles: Particles object 
-            :param memory_field:
-
-            :type length: float
-            :type nb_linear_steps: int
-            :type dt: float
-            :type celerity: float
-            :type linear_density: float
-            :type tension: float
-            :type edge_left: Edge class
-            :type edge_right: Edge class
-            :type ic_pos: list
-            :type ic_vel: list
-            :type particles: Particles object 
-            :type memory_field: int
+            :param memory_field: the maximum simultaneous elements the field class can hold. 'np.inf' for no limitation
         """
-        self.dx = length/float(nb_linear_steps)
+        self.dx = length/float(space_steps)
         self.invdx2 = 1/self.dx**2
-        self.nb_linear_steps = nb_linear_steps
+        self.space_steps = space_steps
         self.dt = dt
         self.invdt2 = 1/self.dt**2
         self.length = length # [m]
@@ -55,7 +46,7 @@ class PhyString:
 
         self.celerity = np.sqrt(tension/linear_density)
 
-        if len(ic_pos) != nb_linear_steps or len(ic_vel) != nb_linear_steps:
+        if len(ic_pos) != space_steps or len(ic_vel) != space_steps:
             raise ValueError()
         
         rho = self.linear_density + self.particles.mass_density()/self.dx
@@ -111,7 +102,7 @@ class PhyString:
         self.field.update(newval) # update field
         self.particles.update() # update particles
     
-    def field_evo(self, u: list, utm: list, uxp: list, uxm: list, rho: list, kappa: list) -> list:
+    def field_evo(self, u: list[float], utm: list[float], uxp: list[float], uxm: list[float], rho: list[float], kappa: list[float]) -> list[float]:
         """
             Given the field, returns the evolution in time with the effective ρ and k
 
@@ -128,31 +119,20 @@ class PhyString:
     def linear_energy(self, u: list, utm: list, uxp: list, uxm: list, rho: list, kappa: list) -> list:
         return 0.5*(rho*self.invdt2*(u - utm)**2 + 0.25*self.tension*self.invdx2*(uxp - uxm)**2 + kappa*u*u)
     
-    def apply_edge(self, f: list, t: int) -> list:
+    def apply_edge(self, f: list[float], t: int) -> list[float]:
         """
             Apply the edge conditions to the string
 
             :param f: the field to be conditioned
             :param t: time step
-
-            :type f: list
-            :type t: int
-
-            :return: the conditioned field
-            :rtype: list
         """
         u = np.copy(f)
-        l = self.edge_left.condition(t)
-        r = self.edge_right.condition(t)
-        if l != None:
-            u[0] = l
-        if r != None:
-            u[len(u) - 1] = r
+        u[0] = self.edge_left.condition(t)
+        u[-1] = self.edge_right.condition(t)
         return u
 
     @staticmethod
-    def shift_list_right(lst: list) -> list:
-        # (corresponds to "-1" in equations)
+    def shift_list_right(lst: list) -> list: # (corresponds to "-1" in equations)
         """
             Shifts a list to the right
             ex: [a, b, c, d] --> [d, a, b, c]
@@ -169,8 +149,7 @@ class PhyString:
         return l
     
     @staticmethod
-    def shift_list_left(lst: list) -> list:
-        # (corresponds to "+1" in equations)
+    def shift_list_left(lst: list) -> list: # (corresponds to "+1" in equations)
         """
             Shifts a list to the left
             ex: [a, b, c, d] --> [b, c, d, a]

@@ -1,14 +1,18 @@
-import simulation
-from edge import MirrorEdge, VoidEdge, ExcitatorSin, ExcitatorSinPeriod
-import numpy as np
 import os
+
+import numpy as np
+
+from simulation import Simulation, CenterFixed
+from particle import Particle, Particles
+from edge import MirrorEdge, ExcitatorSin, ExcitatorSinPeriod
+from process import PostProcess
 
 mypath = os.path.dirname(os.path.abspath(__file__))
 mypath = "C:\\Users\\leog\\Desktop\\lg2021stage\\output" # A CHANGER BIEN SUR
 
-duration = 5.0 # duration of simulation [s]
+duration = 2.0 # duration of simulation [s]
 length = 1.0 # [m]
-tension = 5.0 # [N]
+tension = 1.0 # [N]
 density = 0.01 # [kg/m]
 mass_particle = 0.01 # [kg]
 particle_freq = 0.5*np.sqrt(25.0/mass_particle)/np.pi # [Hz]
@@ -30,9 +34,15 @@ length = dx*space_steps # recompute the length in order to be consistent (may be
 
 left = ExcitatorSin(dt, 0.01, signal_pulsation, 0.0)
 right = MirrorEdge()
-
-simu = simulation.FreeString(dt, time_steps, space_steps, length, density, tension, left, right, log=True)
-### simu = simulation.CenterFixed(dt, time_steps, space_steps, length, density, tension, left, right, mass_particle, pulsation_particle, log=True)
+# simu = simulation.FreeString(dt, time_steps, space_steps, length, density, tension, left, right, log=True)
+simu = CenterFixed(dt, time_steps, space_steps, length, density, tension, left, right, mass_particle, pulsation_particle, log=True)
 # print(simu) # you can check if the simulation is good for you by printing it BEFORE running it...
 
-simu.run(mypath, anim=True, file=True, frameskip=True, yscale=5.0, window_anim=False)
+field_path, particles_path = simu.run(mypath, anim=True, file=True, frameskip=True, yscale=5.0, window_anim=False) # runs the simulation
+
+field_file = open(field_path, "r")
+windows = [ # list of tuples: each tuple is the spatial window where to compute the FFT
+    (0.1, 0.5)
+]
+pp = PostProcess(field_file, log=True)
+pp.fourier(*windows, frameskip=20, path=mypath) # makes the fourier analysis on the windows given

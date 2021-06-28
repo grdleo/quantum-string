@@ -2,7 +2,10 @@ import numpy as np
 from numpy import ndarray
 import scipy
 import scipy.signal
-from matplotlib import pyplot as plt
+
+"""
+    Classes for dealing with a 1D field in time
+"""
 
 class OneSpaceField:
     """
@@ -10,15 +13,16 @@ class OneSpaceField:
 
         The memory can be limited if necessary
     """
+
+    val: ndarray
+    """ Matrix representing the field. The n-th line corresponds to the field at time step n. """
+
     def __init__(self, init_val: ndarray, memory=np.inf):
         """
             Initialise the field
 
             :param init_val: initial value for the field. Each line is a value of the field at a certain time. First line is for t=0, second line is for t=Δt, etc
             :param memory: number of fields that will be saved at the same time (if inf -> no limit of memory)
-
-            :type init_val: NumPy 2D array
-            :type memory: int
         """
         if memory < 3:
             raise ValueError("'memory' has to be greater than 3!")
@@ -37,9 +41,7 @@ class OneSpaceField:
     
     def pos_steps(self) -> int:
         """
-            Returns the number of position steps in the field
-
-            :return: number of distance steps of the field (aka the number of cells in the field, or the number of cols in the matrix)
+            Returns the number of position steps in the field (aka the number of cells in the field, or the number of cols in the matrix)
         """
         return self.val[0].shape[0]
     
@@ -52,9 +54,6 @@ class OneSpaceField:
     def update(self, newval: list):
         """
             Appends a new value of the field at the time t=t₁+Δt where t₁ is the current time step of the field
-
-            :param newval: the next value for the field, has to have the same length as the previous entries
-            :type newval: list
         """
         self._last_tstep += 1
         self.val = np.vstack((self.val, newval))
@@ -64,11 +63,6 @@ class OneSpaceField:
     def get_val_time(self, t: int) -> ndarray:
         """
             Get the value of  the field at the step t×Δt
-
-            :param t: a time step
-            :type t: int
-
-            :return: the 1D field at the time step considered
         """
         tstep = t if (self._last_tstep < self.memory) or (t < 0) else t - self._last_tstep + self.memory
         if tstep < 0 and t >= 0: # therefore user tried to access a field that does not exist anymore due to memory restriction
@@ -78,33 +72,28 @@ class OneSpaceField:
     def get_val_pos(self, n: int) -> ndarray:
         """
             Get the list of the values taken by the cell at step n×Δx for all time steps
-
-            :param n: index of a 1D field cell
-            :type n: int
-
-            :return: list of all the values taken by the field for each time steps
         """
         return self.val[:,n]
 
     def get_last(self) -> ndarray:
         """
             Returns the field at the time t₁, where t₁ is the current time step of the field
-
-            :return: field at the time t₁, where t₁ is the current time step of the field
         """
         return self.get_val_time(self._last_tstep)
     
     def get_prev(self) -> ndarray:
         """
             Returns the field at the time t₁-1, where t₁ is the current time step of the field
-
-            :return: field at the time t₁-1, where t₁ is the current time step of the field
         """
         return self.get_val_time(self._last_tstep - 1)
     
-    def space_fft(self, t: int, dx: float, xwindow=False) -> tuple:
+    def space_fft(self, t: int, dx: float, xwindow=(0, -1)) -> tuple:
+        """
+            Computes the FFT of the field at the time t, in the space window given.
+            Returns a tuple where the first element is the FFT, and the second the space frequency axis
+        """
         a, b = 0, self.val.shape[1]
-        if xwindow != False:
+        if xwindow != (0, -1):
             a, b = int(xwindow[0]), int(xwindow[1])
         field = self.get_val_time(t)
         signal = field[a:b]
@@ -113,9 +102,13 @@ class OneSpaceField:
         fftfreq = scipy.fft.fftfreq(n, d=dx)
         return fft, fftfreq
     
-    def time_fft(self, x: int, dt: float, twindow=False) -> tuple:
+    def time_fft(self, x: int, dt: float, twindow=(0, -1)) -> tuple:
+        """
+            Computes the FFT of the field at the position x, in the time window given.
+            Returns a tuple where the first element is the FFT, and the second the time frequency axis
+        """
         a, b = 0, self.val.shape[0]
-        if twindow != False:
+        if twindow != (0, -1):
             a, b = int(twindow[0]), int(twindow[1])
         field = self.get_val_pos(x)
         signal = field[a:b]
@@ -125,7 +118,11 @@ class OneSpaceField:
         return fft, fftfreq
 
     @staticmethod
-    def retrieve_sines(self, fft: list, fftfreq: list, h=0.0001):
+    def retrieve_sines(self, fft: list, fftfreq: list, h=0.0001) -> dict:
+        """
+            Given a FFT, returns the caracteristics of the main sines (peaks) of the signal.
+            Returns a dictionary: { "frequency", "amplitude", "phase" }
+        """
         n = fftfreq.shape[-1]
         trunc_n = 0.5*n
         trunc_n += 1 if n % 2 != 0 else 0
@@ -141,16 +138,3 @@ class OneSpaceField:
             "amplitude": amp_peaks,
             "phase": phase_peaks
         }
-    
-    def spectrogram(self, xwindow=False):
-        windowed_signal = self.val
-        if type(xwindow) == tuple:
-            a, b = int(xwindow[0]), int(xwindow[1])
-            windowed_signal = self.val[:,a:b]
-        nbcells = windowed_signal.shape[1]
-        tocompute_signal = windowed_signal.reshape(windowed_signal.size)
-        f, t, Sxx = scipy.signal.spectrogram(tocompute_signal, nperseg=nbcells, noverlap=0)
-        plt.pcolormesh(t, f, Sxx, shading='gouraud')
-        plt.ylabel('Frequency [Hz]')
-        plt.xlabel('Time [sec]')
-        plt.show()
