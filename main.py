@@ -38,7 +38,7 @@ right = MirrorEdge()
 simu = CenterFixed(dt, time_steps, space_steps, length, density, tension, left, right, mass_particle, pulsation_particle, log=True)
 # print(simu) # you can check if the simulation is good for you by printing it BEFORE running it...
 
-field_path, particles_path = simu.run(mypath, anim=True, file=True, frameskip=True, yscale=5.0, window_anim=False) # runs the simulation
+field_path, particles_path = simu.run(mypath, anim=True, file=True, frameskip=True, yscale=5.0, window_anim=False, compress=False) # runs the simulation
 
 field_file = open(field_path, "r")
 windows = [ # list of tuples: each tuple is the spatial window where to compute the FFT

@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from field import OneSpaceField 
-from edge import Edge
+from edge import Edge, LoopEdge, AbsorberEdge
 from particle import Particles
 
 """
@@ -114,7 +114,7 @@ class PhyString:
             :param kappa: effective stiffness spring
         """
         inv_force = self.invv2/rho
-        return 2*u*(1 - inv_force*(self.tension + 0.5*kappa*self.dx)) + inv_force*self.tension*(uxp + uxm) - utm
+        return 2.0*u*(1.0 - inv_force*(self.tension + 0.5*kappa*self.dx)) + inv_force*self.tension*(uxp + uxm) - utm
     
     def linear_energy(self, u: list, utm: list, uxp: list, uxm: list, rho: list, kappa: list) -> list:
         return 0.5*(rho*self.invdt2*(u - utm)**2 + 0.25*self.tension*self.invdx2*(uxp - uxm)**2 + kappa*u*u)
@@ -127,21 +127,32 @@ class PhyString:
             :param t: time step
         """
         u = np.copy(f)
-        u[0] = self.edge_left.condition(t)
-        u[-1] = self.edge_right.condition(t)
+        loop_left = type(self.edge_left) == LoopEdge
+        loop_right = type(self.edge_right) == LoopEdge
+
+        if loop_left and not loop_right:
+            u[-1] = self.edge_right.condition(t)
+            u[0] = u[-1]
+        elif not loop_left and loop_right:
+            u[0] = self.edge_left.condition(t)
+            u[-1] = u[0]
+        elif loop_left and loop_right:
+            u[-1] = u[0]
+        else:
+            u[0] = self.edge_left.condition(t)
+            u[-1] = self.edge_right.condition(t)
+
         return u
 
     @staticmethod
     def shift_list_right(lst: list) -> list: # (corresponds to "-1" in equations)
         """
             Shifts a list to the right
-            ex: [a, b, c, d] --> [d, a, b, c]
+
+            >>> Simulation.shift_list_right([1, 2, 3, 4])
+            [4, 1, 2, 3]
 
             :param lst: the list to be shifted
-            :type lst: list
-
-            :return: shifted list
-            :rtype: list
         """
         l = lst.copy()
         l = np.insert(l, 0, l[-1])
@@ -152,13 +163,11 @@ class PhyString:
     def shift_list_left(lst: list) -> list: # (corresponds to "+1" in equations)
         """
             Shifts a list to the left
-            ex: [a, b, c, d] --> [b, c, d, a]
+
+            >>> Simulation.shift_list_left([1, 2, 3, 4])
+            [2, 3, 4, 1]
 
             :param lst: the list to be shifted
-            :type lst: list
-
-            :return: shifted list
-            :rtype: list
         """
         l = lst.copy()
         l = np.insert(l, len(l), l[0])

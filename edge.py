@@ -23,6 +23,20 @@ class MirrorEdge(Edge):
         condition = lambda tstep: 0.0
         super().__init__(condition)
 
+class AbsorberEdge(Edge):
+    """
+        Inheritence from Edge: simulate an absorber
+    """
+    def __init__(self):
+        super().__init__(None)
+
+class LoopEdge(Edge):
+    """
+        Inheritence from Edge: make the string a loop, by making the two edges one
+    """
+    def __init__(self):
+        super().__init__(None)
+
 class ExcitatorEdge(Edge):
     pass
 

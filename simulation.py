@@ -35,6 +35,7 @@ class Simulation:
     STR_DENSITY = "rho"
     STR_LENGTH = "L"
 
+    BLACK = (0, 0, 0)
     RED = (255, 0, 0)
     GREEN = (0, 255, 0)
     BLUE = (0, 0, 255)
@@ -98,7 +99,7 @@ class Simulation:
         """
         return os.path.join(path, "{}{}.{}".format(Simulation.IMG_PREFIX, i, Simulation.IMG_FORMAT))
 
-    def run(self, path: str, anim=True, file=True, res=(480, 320), frameskip=True, yscale=5.0, window_anim=False) -> tuple[str, str]:
+    def run(self, path: str, anim=True, file=True, res=(480, 320), frameskip=1, yscale=5.0, window_anim=False, compress=True) -> tuple[str, str]:
         """
             Runs the simulation with options to save it as a animation and/or in a file
             Returns the path of the field and particles file generated (if generated)
@@ -120,8 +121,7 @@ class Simulation:
             ff.write(begtxt)
             pf.write(begtxt)
         
-        cblack = (0, 0, 0)
-        template_anim = Image.new('RGB', res, color=cblack)
+        template_anim = Image.new('RGB', res, color=Simulation.BLACK)
 
         render_len = self.s.length
         render_nbcells = self.s.space_steps
@@ -148,13 +148,7 @@ class Simulation:
             }
             self.anim_params["origin"] = (self.anim_params["margin"], int(0.5*res[1]))
             self.anim_params["pix_per_m"] = res[0]/render_len
-
-            if type(frameskip) == bool and frameskip:
-                max_frames = self.anim_params["max_frames"]
-                tot_frames = max_frames if self.time_steps >= max_frames else self.time_steps
-                frameskip = int(self.time_steps/tot_frames)
-            else:
-                frameskip = 1
+            
         list_imgs = []
 
         percent = 0
@@ -196,7 +190,7 @@ class Simulation:
         
         if anim:
             print("video output creation...") if self.log else None
-            Simulation.create_video(list_imgs, path, title=Simulation.VID_PREFIX, log=self.log, timestamp=timestamp)
+            Simulation.create_video(list_imgs, path, title=Simulation.VID_PREFIX, log=self.log, timestamp=timestamp, compress=compress)
         if file:
             return field_file_path, particles_file_path
 
@@ -297,7 +291,7 @@ class FreeString(RestString):
         Abstraction of RestString: the system is particle free
     """
     def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, log=True, memory_field=5):
-        particles = Particles(space_steps, [])
+        particles = Particles()
         super().__init__(dt, time_steps, space_steps, string_len, string_density, string_tension, edge_left, edge_right, particles, log=log, memory_field=memory_field)
 
 class CenterFixed(RestString):
@@ -307,12 +301,12 @@ class CenterFixed(RestString):
     def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, mass_particle: float, pulsation_particle: float, log=True, memory_field=5):
         center_string = math.floor(space_steps*0.5)
         p = Particle(center_string, 0.0, mass_particle, pulsation_particle, True, space_steps)
-        particles = Particles(space_steps, [p])
+        particles = Particles(p)
         super().__init__(dt, time_steps, space_steps, string_len, string_density, string_tension, edge_left, edge_right, particles, log=log, memory_field=memory_field)
 
 class Cavity(Simulation):
     """
-        Abstraction of Simulation: mirrors in both ends, initial position given but initial velocity = 0
+        Abstraction of Simulation: mirrors in both ends, initial position given but initial velocity is zero
     """
     def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, ic_pos: list, particles: Particles, log=True, memory_field=5):
         ml, mr = MirrorEdge(), MirrorEdge()

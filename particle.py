@@ -89,7 +89,7 @@ class Particles:
     empty: bool
     """ if True, there is no Particle inside this object """
 
-    def __init__(self, space_steps: int, particles: list[Particle]):
+    def __init__(self, *particles: list[Particle]):
         """
             Initialise the list of particles
 
@@ -97,11 +97,12 @@ class Particles:
             :param particles: all the particles considered in a list
         """
         self.empty = True
-        self.space_steps = space_steps
+        self.space_steps = 0
         self.particles_quantity = len(particles)
         self.free_particles = False # if True, at least one particle is moving 
         self.particles = []
         if self.particles_quantity != 0:
+            self.space_steps = particles[0].space_steps
             self.empty = False
             self.particles = particles
             for p in particles:
