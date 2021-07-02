@@ -6,7 +6,7 @@ import json
 
 from phystring import PhyString
 from particle import Particle, Particles
-from edge import Edge, MirrorEdge
+from edge import Edge, MirrorEdge, LoopEdge
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -85,7 +85,7 @@ class Simulation:
         }
     
     def __repr__(self):
-        return "[SIMULATION]    Δt={}s, Δx={}m, time steps={}, string steps (nb discretisation)={}\n{}\n{}".format(
+        return "[SIMULATION]    Δt={}s, Δx={}m, time steps={}, space steps={}\n{}\n{}".format(
             self.s.dt, 
             self.s.dx, 
             self.time_steps, 
@@ -282,7 +282,7 @@ class RestString(Simulation):
         Abstraction of Simulation: the initial field is at rest
     """
     def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, particles, log=True, memory_field=5):
-        ic_pos = [0]*space_steps
+        ic_pos = [0.0]*space_steps
         ic_vel = ic_pos.copy()
         super().__init__(dt, time_steps,  space_steps, string_len, string_density, string_tension, edge_left, edge_right, ic_pos, ic_vel, particles, log=log, memory_field=memory_field)
 
@@ -291,7 +291,7 @@ class FreeString(RestString):
         Abstraction of RestString: the system is particle free
     """
     def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, log=True, memory_field=5):
-        particles = Particles()
+        particles = Particles(space_steps=space_steps)
         super().__init__(dt, time_steps, space_steps, string_len, string_density, string_tension, edge_left, edge_right, particles, log=log, memory_field=memory_field)
 
 class CenterFixed(RestString):
@@ -308,9 +308,18 @@ class Cavity(Simulation):
     """
         Abstraction of Simulation: mirrors in both ends, initial position given but initial velocity is zero
     """
-    def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, ic_pos: list, particles: Particles, log=True, memory_field=5):
+    def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, ic_pos: list, ic_vel: list, particles: Particles, log=True, memory_field=5):
         ml, mr = MirrorEdge(), MirrorEdge()
         ic_pos = np.array(ic_pos)
-        ic_vel = [0]*len(ic_pos)
         ic_vel = np.array(ic_vel)
         super().__init__(dt, time_steps, space_steps, string_len, string_density, string_tension, ml, mr, ic_pos, ic_vel, particles, log=log, memory_field=memory_field)
+
+class RingString(Simulation):
+    """
+        Abstraction of Simulation: both ends are connected (equivalent of a ring)
+    """
+    def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, ic_pos: list, ic_vel: list, particles: Particles, log=True, memory_field=5):
+        ll, lr = LoopEdge(), LoopEdge()
+        ic_pos = np.array(ic_pos)
+        ic_vel = np.array(ic_vel)
+        super().__init__(dt, time_steps, space_steps, string_len, string_density, string_tension, ll, lr, ic_pos, ic_vel, particles, log=log, memory_field=memory_field)

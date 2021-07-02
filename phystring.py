@@ -47,7 +47,7 @@ class PhyString:
         self.celerity = np.sqrt(tension/linear_density)
 
         if len(ic_pos) != space_steps or len(ic_vel) != space_steps:
-            raise ValueError()
+            raise ValueError("Initial conditions shapes for position and velocity not matching! ")
         
         rho = self.linear_density + self.particles.mass_density()/self.dx
         kappa = self.particles.spring_density()
@@ -55,12 +55,12 @@ class PhyString:
         ic_pos = np.array(ic_pos)
         ic_vel = np.array(ic_vel)
 
-        ic_pos = self.apply_edge(ic_pos, 0)
+        ic_pos = self.apply_edge(ic_pos, ic_pos, 0)
         utm = ic_pos - self.dt*ic_vel # for the initialisation, corresponds to the previous field
         uxp = PhyString.shift_list_left(ic_pos)
         uxm = PhyString.shift_list_right(ic_pos)
         ic_pos1 = self.field_evo(ic_pos, utm, uxp, uxm, rho, kappa)
-        ic_pos1 = self.apply_edge(ic_pos1, 1)
+        ic_pos1 = self.apply_edge(ic_pos1, utm, 1)
 
         init_val = np.vstack((ic_pos, ic_pos1))
         self.field = OneSpaceField(init_val, memory=memory_field)
@@ -97,7 +97,7 @@ class PhyString:
         E = self.length*np.sum(dEdx)
 
         newval = self.field_evo(last_val, llast_val, last_val_p, last_val_m, rho, kappa) # evolution of the string according to the equations
-        newval = self.apply_edge(newval, tstep + 1) # apply the conditions at both of the edges 
+        newval = self.apply_edge(newval, last_val, tstep + 1) # apply the conditions at both of the edges 
 
         self.field.update(newval) # update field
         self.particles.update() # update particles
@@ -119,7 +119,7 @@ class PhyString:
     def linear_energy(self, u: list, utm: list, uxp: list, uxm: list, rho: list, kappa: list) -> list:
         return 0.5*(rho*self.invdt2*(u - utm)**2 + 0.25*self.tension*self.invdx2*(uxp - uxm)**2 + kappa*u*u)
     
-    def apply_edge(self, f: list[float], t: int) -> list[float]:
+    def apply_edge(self, f: list[float], ftm: list[float], t: int) -> list[float]:
         """
             Apply the edge conditions to the string
 
@@ -127,20 +127,15 @@ class PhyString:
             :param t: time step
         """
         u = np.copy(f)
-        loop_left = type(self.edge_left) == LoopEdge
-        loop_right = type(self.edge_right) == LoopEdge
 
-        if loop_left and not loop_right:
-            u[-1] = self.edge_right.condition(t)
-            u[0] = u[-1]
-        elif not loop_left and loop_right:
-            u[0] = self.edge_left.condition(t)
-            u[-1] = u[0]
-        elif loop_left and loop_right:
-            u[-1] = u[0]
-        else:
-            u[0] = self.edge_left.condition(t)
-            u[-1] = self.edge_right.condition(t)
+        type_left = type(self.edge_left)
+        type_right = type(self.edge_right)
+
+        if type_left != LoopEdge:
+            u[0] = ftm[1] if type_left == AbsorberEdge else self.edge_left.condition(t)
+        
+        if type_right != LoopEdge:
+            u[-1] = ftm[-2] if type_right == AbsorberEdge else self.edge_right.condition(t)
 
         return u
 

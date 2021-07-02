@@ -33,6 +33,7 @@ class AbsorberEdge(Edge):
 class LoopEdge(Edge):
     """
         Inheritence from Edge: make the string a loop, by making the two edges one
+        considering my code, this is equivalent with no condition at all
     """
     def __init__(self):
         super().__init__(None)

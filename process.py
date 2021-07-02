@@ -22,7 +22,7 @@ class PostProcess:
         self.log = log
         self.fieldfile = fieldfile
         fieldfile.seek(0, 0)
-        self.infos = json.loads(fieldfile.readline())
+        self.infos = json.loads(fieldfile.readline()) # loads the first line to gather the infos about the simulation
         self.dx = self.infos[Simulation.STR_DX]
         self.dt = self.infos[Simulation.STR_DT]
         self.nx = self.infos[Simulation.STR_SPACESTEPS]
