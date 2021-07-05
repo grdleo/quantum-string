@@ -3,6 +3,8 @@ from numpy import ndarray
 import scipy
 import scipy.signal
 
+from __future__ import annotations
+
 """
     Classes for dealing with a 1D field in time
 """
@@ -92,29 +94,29 @@ class OneSpaceField:
             Computes the FFT of the field at the time t, in the space window given.
             Returns a tuple where the first element is the FFT, and the second the space frequency axis
         """
-        a, b = 0, self.val.shape[1]
-        if xwindow != (0, -1):
-            a, b = int(xwindow[0]), int(xwindow[1])
         field = self.get_val_time(t)
-        signal = field[a:b]
-        n = signal.shape[-1]
-        fft = scipy.fft.fft(signal)
-        fftfreq = scipy.fft.fftfreq(n, d=dx)
-        return fft, fftfreq
+        return OneSpaceField.fft(field, dx, window=xwindow)
     
     def time_fft(self, x: int, dt: float, twindow=(0, -1)) -> tuple:
         """
             Computes the FFT of the field at the position x, in the time window given.
             Returns a tuple where the first element is the FFT, and the second the time frequency axis
         """
-        a, b = 0, self.val.shape[0]
-        if twindow != (0, -1):
-            a, b = int(twindow[0]), int(twindow[1])
         field = self.get_val_pos(x)
+        return OneSpaceField.fft(field, dt, window=twindow)
+
+    @staticmethod
+    def fft(field: list[float], d: float, window=(0, -1), averages=1) -> tuple:
+        if averages != 1:
+            raise NotImplementedError("FFT averages not implemented yet")
+        
+        a, b = 0, field.shape[0]
+        if window != (0, -1):
+            a, b = int(window[0]), int(window[1])
         signal = field[a:b]
         n = signal.shape[-1]
         fft = scipy.fft.fft(signal)
-        fftfreq = scipy.fft.fftfreq(n, d=dt)
+        fftfreq = scipy.fft.fftfreq(n, d=d)
         return fft, fftfreq
 
     @staticmethod

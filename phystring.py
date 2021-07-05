@@ -66,11 +66,13 @@ class PhyString:
         self.field = OneSpaceField(init_val, memory=memory_field)
     
     def __repr__(self):
-        return "[STRING]    L={0:.1f}m, T={1:.1f}N, rho={2:.1f}kg/m, c={3:.1f}m/s ; {4} particles".format(
+        return "[STRING]    L={0:.3f}m, T={1:.3f}N, rho={2:.3f}kg/m, c={3:.3f}m/s ; ›{4}   {5}‹ ; {6} particles".format(
             self.length,
             self.tension,
             self.linear_density,
             self.celerity,
+            self.edge_left,
+            self.edge_right,
             self.particles.particles_quantity
         )
         
@@ -78,7 +80,6 @@ class PhyString:
         """
             Updates the string for the next time step
         """
-        pt = self.particles.mass_presence() # boolean vector where particle are
 
         ### IF THE PARTICLES ARE ALL FIXED, NO NEED TO RECOMPUTE THIS EVERY FRAME !!!
         rho = self.linear_density + self.particles.mass_density()/self.dx
@@ -89,9 +90,7 @@ class PhyString:
         last_val = self.field.get_last() # field at t
         llast_val = self.field.get_prev() # field at t - 1
         last_val_m = PhyString.shift_list_right(last_val) # field at t right shifted. means that at x position, will return value at x - 1
-        last_val_m[0] = 0.0 # because the array is shifted, the left end is meaningless
         last_val_p = PhyString.shift_list_left(last_val) # field at t left shifted. means that at x position, will return value at x + 1
-        last_val_p[-1] = 0.0 # because the array is shifted, the right end is meaningless
 
         dEdx = self.linear_energy(last_val, llast_val, last_val_p, last_val_m, rho, kappa)
         E = self.length*np.sum(dEdx)

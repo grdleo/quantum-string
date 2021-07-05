@@ -34,6 +34,8 @@ class Simulation:
     STR_TENSION = "T"
     STR_DENSITY = "rho"
     STR_LENGTH = "L"
+    STR_EDGE_LEFT = "edge_left"
+    STR_EDGE_RIGHT = "edge_right"
 
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
@@ -81,6 +83,8 @@ class Simulation:
             Simulation.STR_LENGTH: self.s.length,
             Simulation.STR_TENSION: self.s.tension,
             Simulation.STR_DENSITY: self.s.linear_density,
+            Simulation.STR_EDGE_LEFT: self.s.edge_left,
+            Simulation.STR_EDGE_RIGHT: self.s.edge_right,
             "particles": self.s.particles.infos()
         }
     
