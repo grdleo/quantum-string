@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os
 import datetime
@@ -14,13 +16,14 @@ from simulation import Simulation
 """
 
 class PostProcess:
+    ANIM_PREFIX = "QuantumStringANIMATION"
     FOURIER_PREFIX = "FourierTransform"
     SPECTRO_PREFIX = "FourierSpectro"
 
-    def __init__(self, fieldfile: TextIOWrapper, log=False):
+    def __init__(self, fieldfile: TextIOWrapper, particlesfile: TextIOWrapper, log=False):
         self.log = log
         self.fieldfile = fieldfile
-        fieldfile.seek(0, 0)
+        self.particlesfile = particlesfile
         self.infos = json.loads(fieldfile.readline()) # loads the first line to gather the infos about the simulation
         self.dx = self.infos[Simulation.STR_DX]
         self.dt = self.infos[Simulation.STR_DT]
@@ -28,6 +31,31 @@ class PostProcess:
         self.nt = self.infos[Simulation.STR_TIMESTEPS]
         self.L = self.infos[Simulation.STR_LENGTH]
         self.duration = self.dt*self.nt
+    
+    @staticmethod
+    def mean_array(a: list[float], amount: int) -> list[float]:
+        mean_size = int(a.size()/amount)
+        r = []
+        i = 0
+    
+    def img_field(f: list[float], p: list[int], path=""):
+        return path
+
+    def anim(self, path: str):
+        ts = int(datetime.datetime.now().timestamp())
+        self.fieldfile.seek(0, 0)
+        self.particlesfile.seek(0, 0)
+        img_files = []
+        t = -1
+        for field, particles in zip(self.fieldfile, self.particlesfile):
+            if t >= 0: # the file has a one-line header (json format)
+                field = Simulation.str2list(field, type=float)
+                particles = Simulation.str2list(particles, type=int)
+                filepath = os.path.join(path, "{}___{}.png".format(ts, t))
+                self.img_field(field, particles, path=filepath)
+                img_files.append(filepath)
+            t += 1
+        ### then compiling the images
     
     def fourier(self, *windows, frameskip=1, path=os.path.dirname(os.path.abspath(__file__))):
         ts = int(datetime.datetime.now().timestamp())

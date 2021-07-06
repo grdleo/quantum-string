@@ -209,6 +209,15 @@ class Simulation:
         """
         return str(list(l)).replace("[", "").replace("]", "").replace(" ", "").replace("\n", "")
     
+    @staticmethod
+    def str2list(s: str, type=float) -> list:
+        """
+            Converts a converted string back into a NumPy array. The type of values can be specified
+        """
+        l = s.replace("\n", "").split(",")
+        return np.array(l).astype(type)
+
+    
     def instant_img(self, baseimg: Image, field: list[float], particles_pos: list[int], tstep: int, yscale=1.0, infos=True) -> Image:
         """
             Create and returns an image of the current state of the simulation

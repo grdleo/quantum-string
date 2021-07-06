@@ -14,7 +14,7 @@ class PhyString:
     """
         Class for the simulation of the string
     """
-    def __init__(self, length: float, space_steps: int, dt: float, linear_density: float, tension: float, edge_left: Edge, edge_right: Edge, ic_pos: list[float], ic_vel: list[float], particles: Particles, memory_field=5):
+    def __init__(self, length: float, space_steps: int, dt: float, linear_density: float, tension: float, edge_left: Edge, edge_right: Edge, ic0: list[float], ic1: list[float], particles: Particles, memory_field=5):
         """
             Initialisation of the string
 
@@ -114,7 +114,7 @@ class PhyString:
         invb = 1/(1 + beta)
         dbg = beta - gamma
         return invb*(uxp + uxm + dbg*u) - utm
-    
+
     def linear_energy(self, u: list, utm: list, uxp: list, uxm: list, rho: list, kappa: list) -> list:
         return 0.5*(rho*self.invdt2*(u - utm)**2 + 0.25*self.tension*self.invdx2*(uxp - uxm)**2 + kappa*u*u)
     
