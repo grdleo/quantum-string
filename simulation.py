@@ -83,8 +83,8 @@ class Simulation:
             Simulation.STR_LENGTH: self.s.length,
             Simulation.STR_TENSION: self.s.tension,
             Simulation.STR_DENSITY: self.s.linear_density,
-            Simulation.STR_EDGE_LEFT: self.s.edge_left,
-            Simulation.STR_EDGE_RIGHT: self.s.edge_right,
+            Simulation.STR_EDGE_LEFT: str(self.s.edge_left),
+            Simulation.STR_EDGE_RIGHT: str(self.s.edge_right),
             "particles": self.s.particles.infos()
         }
     

@@ -66,7 +66,7 @@ class PhyString:
         self.field = OneSpaceField(init_val, memory=memory_field)
     
     def __repr__(self):
-        return "[STRING]    L={0:.3f}m, T={1:.3f}N, rho={2:.3f}kg/m, c={3:.3f}m/s ; ›{4}   {5}‹ ; {6} particles".format(
+        return "[STRING]    L={0:.3f}m, T={1:.3f}N, rho={2:.3f}kg/m, c={3:.3f}m/s ; >{4}   {5}< ; {6} particles".format(
             self.length,
             self.tension,
             self.linear_density,
@@ -82,8 +82,10 @@ class PhyString:
         """
 
         ### IF THE PARTICLES ARE ALL FIXED, NO NEED TO RECOMPUTE THIS EVERY FRAME !!!
-        rho = self.linear_density + self.particles.mass_density()/self.dx
-        kappa = self.particles.spring_density()
+        m = self.particles.mass_density()
+        k = self.particles.spring_density()
+        beta = m/(self.linear_density*self.dx)
+        gamma = k*self.dx/self.tension
         ###
 
         tstep = self.field.current_time_step()
@@ -92,28 +94,26 @@ class PhyString:
         last_val_m = PhyString.shift_list_right(last_val) # field at t right shifted. means that at x position, will return value at x - 1
         last_val_p = PhyString.shift_list_left(last_val) # field at t left shifted. means that at x position, will return value at x + 1
 
-        dEdx = self.linear_energy(last_val, llast_val, last_val_p, last_val_m, rho, kappa)
-        E = self.length*np.sum(dEdx)
-
-        newval = self.field_evo(last_val, llast_val, last_val_p, last_val_m, rho, kappa) # evolution of the string according to the equations
+        newval = self.field_evo(last_val, llast_val, last_val_p, last_val_m, beta, gamma) # evolution of the string according to the equations
         newval = self.apply_edge(newval, last_val, tstep + 1) # apply the conditions at both of the edges 
 
         self.field.update(newval) # update field
         self.particles.update() # update particles
     
-    def field_evo(self, u: list[float], utm: list[float], uxp: list[float], uxm: list[float], rho: list[float], kappa: list[float]) -> list[float]:
+    def field_evo(self, u: list[float], utm: list[float], uxp: list[float], uxm: list[float], beta: list[float], gamma: list[float]) -> list[float]:
         """
-            Given the field, returns the evolution in time with the effective ρ and k
+            Given the field, returns the evolution in time
 
             :param u: field at current time
             :param utm: field at previous time
             :param uxp: field at current time shifted -Δx
             :param uxm: field at current time shifted +Δx
-            :param rho: effective linear density 
-            :param kappa: effective stiffness spring
+            :param beta: (see equation)
+            :param gamma: (see equation)
         """
-        inv_force = self.invv2/rho
-        return 2.0*u*(1.0 - inv_force*(self.tension + 0.5*kappa*self.dx)) + inv_force*self.tension*(uxp + uxm) - utm
+        invb = 1/(1 + beta)
+        dbg = beta - gamma
+        return invb*(uxp + uxm + dbg*u) - utm
     
     def linear_energy(self, u: list, utm: list, uxp: list, uxm: list, rho: list, kappa: list) -> list:
         return 0.5*(rho*self.invdt2*(u - utm)**2 + 0.25*self.tension*self.invdx2*(uxp - uxm)**2 + kappa*u*u)

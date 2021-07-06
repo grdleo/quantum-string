@@ -1,9 +1,9 @@
+from __future__ import annotations
+
 import numpy as np
 from numpy import ndarray
 import scipy
 import scipy.signal
-
-from __future__ import annotations
 
 """
     Classes for dealing with a 1D field in time

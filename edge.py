@@ -103,8 +103,8 @@ class ExcitatorSin(ExcitatorEdge):
         def sin(tstep):
             delayed = tstep - steps_delay
             return amplitude*np.sin(pulsation*delayed*dt) if delayed >= 0 else 0.0
-        self.infostring = "sin[amplitude={}, ω={}{}]".format(amplitude, pulsation, "" if delay == 0.0 else ", delay={}".format(delay))
         super().__init__(sin)
+        self.infostring = "sin[a={}, w={}{}]".format(amplitude, pulsation, "" if delay == 0.0 else ", delay={}".format(delay))
 
 class ExcitatorSinPeriod(ExcitatorEdge):
     def __init__(self, dt: float, amplitude: float, pulsation: float, delay: float, nb_periods=1):
@@ -121,8 +121,8 @@ class ExcitatorSinPeriod(ExcitatorEdge):
         def sin(tstep):
             delayed = tstep - steps_delay
             return amplitude*np.sin(pulsation*delayed*dt) if delayed >= 0 and delayed*dt <= nb_periods*2*np.pi/pulsation else 0.0
-        self.infostring = "sin[periods={}, amplitude={}, ω={}{}]".format(nb_periods, amplitude, pulsation, "" if delay == 0.0 else ", delay={}".format(delay))
         super().__init__(sin)
+        self.infostring = "sin[periods={}, a={}, w={}{}]".format(nb_periods, amplitude, pulsation, "" if delay == 0.0 else ", delay={}".format(delay))
 
 class ExcitatorPulse(ExcitatorEdge):
     """
@@ -134,12 +134,12 @@ class ExcitatorPulse(ExcitatorEdge):
     """
     def __init__(self, dt: float, amplitude: float, duration: float):
         pulse = lambda tstep: amplitude if tstep*dt <= duration else 0.0 
-        self.infostring = "pulse[amplitude={}, T={}]".format(amplitude, duration)
         super().__init__(pulse)
+        self.infostring = "pulse[amplitude={}, T={}]".format(amplitude, duration)
 
 class ExcitatorWhiteNoise(ExcitatorEdge):
     def __init__(self, dt: float, amp_min: float, amp_max: float, duration: float):
         amp_delta = np.abs(amp_max - amp_min)
         noise = lambda tstep: random.random()*amp_delta + amp_min if tstep*dt <= duration else 0.0
-        self.infostring = "white[min={}, max={}".format(amp_min, amp_max)
         super().__init__(noise)
+        self.infostring = "white[min={}, max={}".format(amp_min, amp_max)
