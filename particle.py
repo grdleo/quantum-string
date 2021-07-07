@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import random
+
 import numpy as np
 
 from field import OneSpaceField
@@ -14,6 +16,7 @@ class Particle:
     """
     STR_MASS = "m"
     STR_PULSATION = "omega"
+    STR_COLOR = "color"
 
     mass: float
     """ Mass *m* of the particle [kg] """
@@ -24,7 +27,7 @@ class Particle:
     fixed: bool
     """ if True, the particle is fixed on the string """
 
-    def __init__(self, pos: int, vel: float, mass: float, pulsation: float, fixed: bool, space_steps: int):
+    def __init__(self, pos: int, vel: float, mass: float, pulsation: float, fixed: bool, space_steps: int, color=(0, 0, 255)):
         """
             Initalises a particle
 
@@ -47,6 +50,7 @@ class Particle:
         self.fixed = fixed
         self._firstpos = pos
         pos_next = pos
+        self.color = color
 
         if not 0 <= pos < space_steps:
             raise ValueError("Cell position of particle {} is not on the string [0, {}]".format(pos, space_steps - 1))
@@ -57,13 +61,17 @@ class Particle:
         init_val =np.vstack((pos, pos_next))
         self.pos = OneSpaceField(init_val, memory=5)
     
+    def __repr__(self):
+        return "m={:.2f}kg, ω={:.2f}rad/s;".format(self.mass, self.pulsation)
+    
     def infos(self) -> dict:
         """
             Returns a dictionary containing the informations about the mass and pulsation of the particle
         """
         return {
             Particle.STR_MASS: self.mass,
-            Particle.STR_PULSATION: self.pulsation
+            Particle.STR_PULSATION: self.pulsation,
+            Particle.STR_COLOR: self.color
         }
     
     def update(self):
@@ -126,7 +134,7 @@ class Particles:
     def __repr__(self):
         s = "[PARTICLES]    ;"
         for (p, i) in zip(self.particles, range(0, self.particles_quantity)):
-            s += "{0}: m={1:.2f}kg, omega={2:.2f}rad/s;".format(i, p.mass, p.pulsation)
+            s += "{}: {}".format(i, str(p))
         return s
     
     def update(self):

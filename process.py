@@ -5,11 +5,16 @@ import os
 import datetime
 from io import TextIOWrapper
 
+import cv2
+import ffmpeg
 import numpy as np
 from matplotlib import pyplot as plt
+from PIL import Image, ImageDraw, ImageFont
+
 
 from field import OneSpaceField
 from simulation import Simulation
+from particle import Particle, Particles
 
 """
     Class for loading a simulation and post process the data
@@ -20,17 +25,30 @@ class PostProcess:
     FOURIER_PREFIX = "FourierTransform"
     SPECTRO_PREFIX = "FourierSpectro"
 
+    COLOR_BLACK = (1, 1, 1)
+    COLOR_GRAY = (192, 192, 192)
+    COLOR_WHITE = (255, 255, 255)
+    COLOR_RED = (0, 0, 255)
+    COLOR_GREEN = (0, 255, 0)
+    COLOR_BLUE = (255, 0, 0)
+
     def __init__(self, fieldfile: TextIOWrapper, particlesfile: TextIOWrapper, log=False):
         self.log = log
         self.fieldfile = fieldfile
         self.particlesfile = particlesfile
         self.infos = json.loads(fieldfile.readline()) # loads the first line to gather the infos about the simulation
+        self.date = self.infos["date"]
         self.dx = self.infos[Simulation.STR_DX]
         self.dt = self.infos[Simulation.STR_DT]
         self.nx = self.infos[Simulation.STR_SPACESTEPS]
         self.nt = self.infos[Simulation.STR_TIMESTEPS]
         self.L = self.infos[Simulation.STR_LENGTH]
+        self.rho = self.infos[Simulation.STR_DENSITY]
+        self.T = self.infos[Simulation.STR_TENSION]
+        self.left = self.infos[Simulation.STR_EDGE_LEFT]
+        self.right = self.infos[Simulation.STR_EDGE_RIGHT]
         self.duration = self.dt*self.nt
+        self.particles = self.infos["particles"]
     
     @staticmethod
     def mean_array(a: list[float], amount: int) -> list[float]:
@@ -38,27 +56,117 @@ class PostProcess:
         r = []
         i = 0
     
-    def img_field(f: list[float], p: list[int], path=""):
-        return path
+    def img_field(self, baseimg: np.ndarray, f: list[float], p: list[int], anim_params: dict, timestep: int, yscale=1.0) -> np.ndarray:
+        """
+            Create and returns an image of the current state of the simulation
 
-    def anim(self, path: str):
+            :param baseimg: base PIL Image to write onto
+            :param field: state of the string
+            :param particles_pos: the position (cell) of each particles
+            :param tstep: time step corresponding to the state
+            :param yscale: scaling factor for vertical axis
+            :param infos: if True, prompt information of the simulation on video
+        """
+        img = np.copy(baseimg)
+        x = np.linspace(anim_params["ox"], anim_params["endstring"], f.size)
+        y = (-anim_params["ppx_per_m"]*yscale*f + anim_params["oy"])
+        string = np.array([(x[i], y[i]) for i in range(0, f.size)]).astype(np.int32)
+        string = string.reshape((-1, 1, 2))
+
+        cv2.polylines(img, [string], False, PostProcess.COLOR_WHITE)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(img, "t={:.6f}s".format(self.dt*timestep), (2, anim_params["ly"] - 5), font, 0.5, PostProcess.COLOR_GRAY, 1, cv2.LINE_AA) 
+
+        r = int(anim_params["mass_rad"])
+        for pidx, part in zip(p, self.particles):
+            center = (int(x[pidx]), int(y[pidx]))
+            cv2.circle(img, center, r, part[Particle.STR_COLOR], -1)
+        
+        return img
+
+    def anim(self, path: str, title=False, resolution=(720, 480), fps=60, frameskip=1, yscale=1.0, log=True, compress=True):
         ts = int(datetime.datetime.now().timestamp())
         self.fieldfile.seek(0, 0)
         self.particlesfile.seek(0, 0)
-        img_files = []
+
+        title = PostProcess.ANIM_PREFIX if type(title) == bool and not title else title
+        videopath = os.path.join(path, "{}-{}-UNCOMPRESSED.mp4".format(title, ts))
+        videopath_compressed = os.path.join(path, "{}-{}.mp4".format(title, ts))
+
+        lx, ly = resolution[0], resolution[1]
+        margin_ppx = 5
+        length_ppx = lx - 2*margin_ppx
+        anim_params = dict(
+            lx=lx,
+            ly=ly,
+            ox=margin_ppx,
+            oy=0.5*ly,
+            endstring=margin_ppx + length_ppx,
+            ppx_per_m=length_ppx,
+            mass_rad=3
+        )
+
+        baseimg = np.zeros((resolution[1], resolution[0], 3), np.uint8)
+
+        textinfos = "L={:.2f}m ρ={:.2f}g/m T={:.2f}N c={:.2f}m/s\n{} ~ {}".format(
+            self.L, 
+            self.rho*1e3, 
+            self.T, 
+            np.sqrt(self.T/self.rho),
+            self.left,
+            self.right
+            )
+        
+        fontpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Roboto-Regular.ttf")
+        font = ImageFont.truetype(fontpath, 16)
+        img_pil = Image.fromarray(baseimg)
+        draw = ImageDraw.Draw(img_pil)
+        draw.multiline_text((2, 2), textinfos, font=font, fill=PostProcess.COLOR_GRAY)
+        lineh = 12
+        hcount = 0
+        for p in self.particles:
+            textparticle = "m={:.1f}g, ω={:.1f}rad/s".format(p[Particle.STR_MASS]*1e3, p[Particle.STR_PULSATION])
+            c = tuple(p[Particle.STR_COLOR])
+            draw.text((lx - 200, 2 + hcount), textparticle, font=font, fill=c)
+            hcount += lineh
+        baseimg = np.array(img_pil)
+
+        video = cv2.VideoWriter(videopath, cv2.VideoWriter_fourcc(*'mp4v'), fps, (lx, ly))
+
+        print("Animation for {} simulation:".format(self.date))
         t = -1
         for field, particles in zip(self.fieldfile, self.particlesfile):
             if t >= 0: # the file has a one-line header (json format)
+                print("{}/{} images processed".format(int(t/frameskip), int(self.nt/frameskip)), end="\r") if log else None
                 field = Simulation.str2list(field, type=float)
                 particles = Simulation.str2list(particles, type=int)
-                filepath = os.path.join(path, "{}___{}.png".format(ts, t))
-                self.img_field(field, particles, path=filepath)
-                img_files.append(filepath)
+                if t%frameskip == 0:
+                    img = self.img_field(baseimg, field, particles, anim_params, t, yscale=yscale)
+                    video.write(img)
             t += 1
-        ### then compiling the images
+        
+        video.release()
+        cv2.destroyAllWindows()
+
+        return_path = videopath
+        if compress:
+            try:
+                video = ffmpeg.input(videopath)
+                video = ffmpeg.output(video, videopath_compressed, vcodec="h264")
+                ffmpeg.run(video)
+                os.remove(videopath)
+                return_path = videopath_compressed
+            except:
+                print("WARNING: could not compress the video due to 'ffmpeg' error...") if log else None
+
+        print("video created successfully!") if log else None
+        return return_path
     
     def fourier(self, *windows, frameskip=1, path=os.path.dirname(os.path.abspath(__file__))):
         ts = int(datetime.datetime.now().timestamp())
+        self.fieldfile.seek(0, 0)
+        self.particlesfile.seek(0, 0)
+
         transforms = dict()
         if len(windows) == 0: # if no window given, take the whole string
             windows = [(0.0, 1.0)]
@@ -75,56 +183,38 @@ class PostProcess:
             copyinfos = self.infos.copy()
             copyinfos["fourier"] = dict(window_cells=(a, b))
             file.write("{}\n".format(json.dumps(copyinfos)))
-        self.fieldfile.seek(0, 0)
-        self.next_line(self.fieldfile) # ...
-        line = self.next_line(self.fieldfile)
-        field = OneSpaceField(line, memory=5)
+
+        osf = OneSpaceField(np.array([[0.0]*self.nx]), memory=3)
         frames = 0
-        i = 0
+        t = -1
 
         print("processing FFT...") if self.log else None
-        while True:
-            for tm in transforms.values():
-                towrite = ""
-                if i % frameskip == 0:
-                    a, b = tm["window_cells"]
-                    mat = tm["mat"]
-                    fft, tm["f"] = field.space_fft(-1, self.infos["dx"], xwindow=(a, b))
-                    tm["mat"] = np.append(mat, [fft], axis=0)
-                    towrite = Simulation.list2str(fft)
-                    frames += 1
-                tm["file"].write("{}\n".format(towrite))
-            line = self.next_line(self.fieldfile)
-            if type(line) == bool:
-                break
-            field.update(line)
-            i += 1
-        t = np.linspace(0.0, self.duration, frames)
+        for line in self.fieldfile:
+            if t >= 0: # the file has a one-line header (json format)
+                field = Simulation.str2list(line)
+                osf.update(field)
+                for tm in transforms.values():
+                    towrite = ""
+                    if t%frameskip == 0:
+                        a, b = tm["window_cells"]
+                        mat = tm["mat"]
+                        fft, tm["f"] = osf.space_fft(-1, self.infos["dx"], xwindow=(a, b))
+                        tm["mat"] = np.append(mat, [fft], axis=0)
+                        towrite = Simulation.list2str(fft)
+                    tm["file"].write("{}\n".format(towrite))
+                    frames = tm["mat"].shape[0] - 1
+            t += 1
+
+        time = np.linspace(0.0, self.duration, frames)
         
         for key, tm in transforms.items(): # creating the spectrography
             tm["file"].close()
             f = tm["f"]
             mat = tm["mat"]
-            ff, tt = np.meshgrid(f, t)
+            ff, tt = np.meshgrid(f, time)
             mat = np.delete(mat, 0, 0)
             plt.pcolormesh(tt, ff, np.abs(mat), shading="gouraud")
             plt.title(key)
             plt.xlabel("Time [s]")
             plt.ylabel("Frequency [Hz]")
             plt.savefig(os.path.join(path, "{}-{}-{}.png".format(PostProcess.SPECTRO_PREFIX, key, ts)), dpi=1024)
-    
-    def next_line(self, file: TextIOWrapper):
-        l = file.readline()
-        if not l:
-            return False
-        a = l.split(",")
-        try:
-            a.remove("\n")
-        except:
-            pass
-        b = [i for i in a if i != ""]
-        try:
-            b = np.array(b).reshape((1, len(b))).astype(float)
-            return b
-        except:
-            return False
