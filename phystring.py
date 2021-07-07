@@ -14,7 +14,7 @@ class PhyString:
     """
         Class for the simulation of the string
     """
-    def __init__(self, length: float, space_steps: int, dt: float, linear_density: float, tension: float, edge_left: Edge, edge_right: Edge, ic_pos: list[float], ic_vel: list[float], particles: Particles, memory_field=5):
+    def __init__(self, length: float, space_steps: int, dt: float, linear_density: float, tension: float, edge_left: Edge, edge_right: Edge, ic0: list[float], ic1: list[float], particles: Particles, memory_field=5):
         """
             Initialisation of the string
 
@@ -46,30 +46,18 @@ class PhyString:
 
         self.celerity = np.sqrt(tension/linear_density)
 
-        if len(ic_pos) != space_steps or len(ic_vel) != space_steps:
+        if len(ic0) != space_steps or len(ic1) != space_steps:
             raise ValueError("Initial conditions shapes for position and velocity not matching! ")
-        
-        rho = self.linear_density + self.particles.mass_density()/self.dx
-        kappa = self.particles.spring_density()
 
-        ic_pos = np.array(ic_pos)
-        ic_vel = np.array(ic_vel)
-
-        ic_pos = self.apply_edge(ic_pos, ic_pos, 0)
-        utm = ic_pos - self.dt*ic_vel # for the initialisation, corresponds to the previous field
-        uxp = PhyString.shift_list_left(ic_pos)
-        uxm = PhyString.shift_list_right(ic_pos)
-        ic_pos1 = self.field_evo(ic_pos, utm, uxp, uxm, rho, kappa)
-        ic_pos1 = self.apply_edge(ic_pos1, utm, 1)
-
-        init_val = np.vstack((ic_pos, ic_pos1))
+        ic1 = self.apply_edge(ic1, ic0, 1)
+        init_val = np.vstack((ic0, ic1))
         self.field = OneSpaceField(init_val, memory=memory_field)
     
     def __repr__(self):
-        return "[STRING]    L={0:.3f}m, T={1:.3f}N, rho={2:.3f}kg/m, c={3:.3f}m/s ; >{4}   {5}< ; {6} particles".format(
+        return "[STRING]    L={0:.1f}m, T={1:.1f}N, ρ={2:.1f}g/m, c={3:.1f}m/s ; {4}|~~~~|{5} ; {6} particles".format(
             self.length,
             self.tension,
-            self.linear_density,
+            self.linear_density*1e3,
             self.celerity,
             self.edge_left,
             self.edge_right,
@@ -114,7 +102,7 @@ class PhyString:
         invb = 1/(1 + beta)
         dbg = beta - gamma
         return invb*(uxp + uxm + dbg*u) - utm
-    
+
     def linear_energy(self, u: list, utm: list, uxp: list, uxm: list, rho: list, kappa: list) -> list:
         return 0.5*(rho*self.invdt2*(u - utm)**2 + 0.25*self.tension*self.invdx2*(uxp - uxm)**2 + kappa*u*u)
     

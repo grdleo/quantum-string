@@ -34,17 +34,26 @@ length = dx*space_steps # recompute the length in order to be consistent (may be
 
 left = ExcitatorSin(dt, 0.01, signal_pulsation, 0.0)
 right = AbsorberEdge()
-simu = FreeString(dt, time_steps, space_steps, length, density, tension, left, right, log=True)
-# simu = CenterFixed(dt, time_steps, space_steps, length, density, tension, left, right, mass_particle, pulsation_particle, log=True)
+# simu = FreeString(dt, time_steps, space_steps, length, density, tension, left, right, log=True)
+simu = CenterFixed(dt, time_steps, space_steps, length, density, tension, left, right, mass_particle, pulsation_particle, log=True)
 # print(simu) # you can check if the simulation is good for you by printing it BEFORE running it...
 
-field_path, particles_path = simu.run(mypath, anim=True, file=True, frameskip=1, yscale=10.0, window_anim=False, compress=True) # runs the simulation
+field_path, particles_path = simu.run(mypath) # runs the simulation
 
-"""
 field_file = open(field_path, "r")
+particles_file = open(particles_path, "r")
+
+pp = PostProcess(field_file, particles_file, log=True)
+
 windows = [ # list of tuples: each tuple is the spatial window where to compute the FFT
     (0.1, 0.5)
 ]
+# pp.anim(mypath, frameskip=1, yscale=10.0)
+pp.fourier(*windows, frameskip=6, path=mypath) # makes the fourier analysis on the windows given
+
+"""
+field_file = open(field_path, "r")
+
 pp = PostProcess(field_file, log=True)
-pp.fourier(*windows, frameskip=20, path=mypath) # makes the fourier analysis on the windows given
+
 """
