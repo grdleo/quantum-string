@@ -44,7 +44,7 @@ class Simulation:
     GRAY = (64, 64, 64)
     WHITE = (255, 255, 255)
 
-    def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, ic_pos: list, ic_vel: list, particles, memory_field=5, log=True):
+    def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, ic0: list[float], ic1: list[float], particles, memory_field=5, log=True):
         """
             Initialisation of the simulation
 
@@ -67,7 +67,7 @@ class Simulation:
         self.dt = dt
         self.time = str(datetime.datetime.now())
 
-        self.s = PhyString(string_len, space_steps, dt, string_density, string_tension, edge_left, edge_right, ic_pos, ic_vel, particles, memory_field=memory_field)
+        self.s = PhyString(string_len, space_steps, dt, string_density, string_tension, edge_left, edge_right, ic0, ic1, particles, memory_field=memory_field)
     
     def infos(self) -> dict[str]:
         """
@@ -89,13 +89,14 @@ class Simulation:
         }
     
     def __repr__(self):
-        return "[SIMULATION]    Δt={}s, Δx={}m, time steps={}, space steps={}\n{}\n{}".format(
+        return "[SIMULATION]    Δt={}s, Δx={}m, time steps={}, space steps={}\n{}\n{}\nEstimation of simulation size = {}MB".format(
             self.s.dt, 
             self.s.dx, 
             self.time_steps, 
             self.s.space_steps,
             self.s,
-            self.s.particles)
+            self.s.particles,
+            self.size_estimation_mb())
 
     def run(self, path: str) -> tuple[str, str]:
         """
@@ -151,6 +152,13 @@ class Simulation:
         print("")
 
         return field_file_path, particles_file_path
+    
+    def size_estimation_mb(self) -> float:
+        """
+            Gives an estimation of the final size of the field file, in MB (Mo in french)
+        """
+        bytes_per_cell = 4
+        return bytes_per_cell*self.s.space_steps*self.time_steps*1e-6
 
     @staticmethod
     def list2str(l: list) -> str:
