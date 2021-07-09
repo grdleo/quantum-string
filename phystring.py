@@ -47,7 +47,7 @@ class PhyString:
         self.celerity = np.sqrt(tension/linear_density)
 
         if len(ic0) != space_steps or len(ic1) != space_steps:
-            raise ValueError("Initial conditions shapes for position and velocity not matching! ")
+            raise ValueError("Initial conditions shapes for initial positions not matching! ")
 
         ic1 = self.apply_edge(ic1, ic0, 1)
         init_val = np.vstack((ic0, ic1))
@@ -99,12 +99,14 @@ class PhyString:
             :param beta: (see equation)
             :param gamma: (see equation)
         """
-        invb = 1/(1 + beta)
-        dbg = beta - gamma
-        return invb*(uxp + uxm + dbg*u) - utm
+        dbg = 2.0*beta - gamma
+        return (uxp + uxm + dbg*u)/(1 + beta) - utm
 
-    def linear_energy(self, u: list, utm: list, uxp: list, uxm: list, rho: list, kappa: list) -> list:
-        return 0.5*(rho*self.invdt2*(u - utm)**2 + 0.25*self.tension*self.invdx2*(uxp - uxm)**2 + kappa*u*u)
+    def linear_energy(self, u: list[float], utm: list[float], uxp: list[float], uxm: list[float], rho: list[float], kappa: list[float]) -> list[float]:
+        le = 0.5*(rho*self.invdt2*(u - utm)**2 + 0.25*self.tension*self.invdx2*(uxp - uxm)**2 + kappa*u*u)
+        le[0] = 0.0 # edges not taken in count
+        le[-1] = 0.0
+        return le
     
     def apply_edge(self, f: list[float], ftm: list[float], t: int) -> list[float]:
         """

@@ -181,11 +181,11 @@ class Particles:
             :param tstep: the time step considered
             :param fixed: if True, will return only the masses that are fixed on the string
         """
-        s = [0]*self.space_steps
+        s = [0.0]*self.space_steps
         if not self.empty:
             for p in self.particles:
                 pos = int(p.pos.get_val_time(tstep)) # get the position of each particle
-                s[pos] += 0 if fixed and not p.fixed else p.mass # increment the vector where the particle is
+                s[pos] += 0.0 if fixed and not p.fixed else p.mass # increment the vector where the particle is
         return np.array(s)
 
     def spring_density(self, tstep=-1, fixed=False) -> list[float]:
@@ -195,11 +195,11 @@ class Particles:
             :param tstep: the time step considered
             :param fixed: if True, will return only the masses that are fixed on the string
         """
-        s = [0]*self.space_steps
+        s = [0.0]*self.space_steps
         if not self.empty:
             for p in self.particles:
                 pos = int(p.pos.get_val_time(tstep)) # get the position of each particle
-                s[pos] += 0 if fixed and not p.fixed else p.mass*p.pulsation*p.pulsation # increment the vector where the particle is
+                s[pos] += 0.0 if fixed and not p.fixed else p.mass*p.pulsation*p.pulsation # increment the vector where the particle is
         return np.array(s)
 
     def mass_presence(self, tstep=-1, fixed=False) -> list[bool]:
