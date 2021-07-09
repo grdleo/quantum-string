@@ -10,6 +10,9 @@ import ffmpeg
 import numpy as np
 from matplotlib import pyplot as plt
 from PIL import Image, ImageDraw, ImageFont
+from mpl_toolkits import mplot3d
+
+
 
 
 from field import OneSpaceField
@@ -50,6 +53,27 @@ class PostProcess:
         self.duration = self.dt*self.nt
         self.particles = self.infos["particles"]
     
+    def particles_pos(self) -> np.ndarray:
+        """
+            r[t,n] where r is the position of the particle, t the timestep considered, and n the index of the particle
+        """
+        self.fieldfile.seek(0, 0)
+        self.particlesfile.seek(0, 0)
+        r = []
+
+        t = -1
+        for field, particles in zip(self.fieldfile, self.particlesfile):
+            if t >= 0:
+                field = Simulation.str2list(field, type=float)
+                particles = Simulation.str2list(particles, type=int)
+                pos_part = []
+                for pos in particles:
+                    pos_part.append(field[pos])
+                pos_part = np.array(pos_part)
+                r.append(pos_part)
+            t += 1
+        return np.array(r)
+
     @staticmethod
     def mean_array(a: list[float], amount: int) -> list[float]:
         mean_size = int(a.size()/amount)
@@ -162,6 +186,147 @@ class PostProcess:
         print("video created successfully!") if log else None
         return return_path
     
+    @staticmethod
+    def reduce_axis(mat: np.ndarray, factor: int, axis=0):
+        """
+            Reduction of matrix but only on a single axis
+        """
+        complementary = 1 if axis == 0 else 0
+        s = mat.shape[complementary]
+        q = mat.shape[axis]
+
+        if s%factor != 0:
+            raise ValueError("Error with matrix shape: {} is not a multiple of {}".format(s, factor))
+
+        l = np.eye(int(q), dtype=float)
+        r = np.repeat(np.eye(int(s/factor), dtype=float), repeats=factor, axis=axis)
+        if axis:
+            l, r = r, l
+        
+        return l.dot(mat).dot(r)/factor
+
+    @staticmethod
+    def reduce_matrix(mat: np.ndarray, a: int) -> np.ndarray:
+        """
+            Given a matrix (an×am), returns a matrix (n×m) where the cells are the means of the cells surroundings
+
+            ex: 
+            >>> mat = np.array([
+                [0, 1, 2, 3],
+                [4, 5, 6, 7],
+                [8, 9, 10, 11],
+                [12, 13, 14, 15]
+            ])
+            >>> PostProcess.reduce_matrix(mat, 2)
+            >>> np.array([
+                [0+1+4+5, 2+3+6+7],
+                [8+9+12+13, 10+11+14+15]
+            ])/(2*2)
+        """
+        an, am = mat.shape
+        if an%a != 0 or am%a != 0:
+            raise ValueError("Error with matrix shape: {} or {} is not a multiple of {}".format(an, am, a))
+        m = am/a
+        n = an/a
+        amat = np.repeat(np.eye(int(n), dtype=float), repeats=a, axis=1)
+        bmat = np.repeat(np.eye(int(m), dtype=float), repeats=a, axis=0)
+
+        return amat.dot(mat).dot(bmat)/(a*a)
+    
+    @staticmethod
+    def prime_factors(num: int) -> list[int]:  
+        primes = []
+        # Using the while loop, we will print the number of two's that divide n  
+        while num%2 == 0:  
+            primes.append(2) 
+            num = int(num*0.5)
+    
+        for i in range(3, int(np.sqrt(num)) + 1, 2):  
+            # while i divides n , print i ad divide n  
+            while num%i == 0:  
+                primes.append(i)
+                num = int(num/i)  
+        
+        if num > 2:
+            primes.append(num)
+
+        return primes
+
+    @staticmethod
+    def all_subsets(*el: object) -> list:
+        n = len(el)
+        subsets = []
+        for i in range(0, 2**n):
+            bin_str = bin(i).replace("0b", "").zfill(n)
+            current = []
+            for b, idx in zip(bin_str, range(0, len(bin_str))):
+                b = int(b)
+                if b:
+                    current.append(el[idx])
+            subsets.append(current)
+        return subsets
+
+    @staticmethod
+    def reduce_space(mat: np.ndarray, ideal_size: tuple[int]) -> np.ndarray:
+        """
+            Reduces a given matrix doing the mean method, by a factor close to the one given in argument. If no factor is given, the highest possible will be made
+        """
+        for i, ideal, axis in zip(mat.shape, ideal_size, (1, 0)):
+            primes = PostProcess.prime_factors(i)[0:16] # we take no more than 16 primes, otherwise the subsets will be too long to compute...
+            subsets = PostProcess.all_subsets(*primes)
+            all_factors = []
+            for sub in subsets:
+                nb = np.prod(sub)
+                all_factors.append(nb)
+            all_factors = np.array(all_factors)
+            factor = all_factors[np.abs(i/all_factors - ideal).argmin()]
+            mat = PostProcess.reduce_axis(mat, factor, axis=axis)
+
+        return mat
+    
+    def get_field(self, matrix_ideal_res: int) -> tuple[np.ndarray]:
+        self.fieldfile.seek(0, 0)
+        Z = [] # mat[t,x]
+        t = -1
+        for f in self.fieldfile:
+            if t >= 0:
+                Z.append(Simulation.str2list(f))
+            t =+ 1
+        Z = np.array(Z)
+
+        ideal_size = (matrix_ideal_res, matrix_ideal_res) # Z matrix is often too large to be plot correctly...
+        Z = PostProcess.reduce_space(Z, ideal_size)
+        tsize, xsize = Z.shape
+
+        xline = np.linspace(0.0, self.L, xsize)
+        tline = np.linspace(0.0, self.duration, tsize)
+        X, T = np.meshgrid(xline, tline)
+
+        return T, X, Z
+
+    def plot3d(self, matrix_ideal_res=128):
+        fig = plt.figure()
+        ax = plt.axes(projection='3d')
+        ax.plot_surface(*self.get_field(matrix_ideal_res),
+                rstride=1, cstride=1,
+                cmap='viridis', edgecolor='none')
+        ax.set_title("Graph evolution of the field (simulation {})".format(self.date))
+        ax.set_xlabel("t [s]")
+        ax.set_ylabel("x [m]")
+        ax.set_zlabel("u [m]")
+        plt.show()
+    
+    def plot2d(self, matrix_ideal_res=512):
+        fig = plt.figure()
+        ax = plt.axes()
+        im = ax.pcolormesh(*self.get_field(matrix_ideal_res),
+                cmap="viridis")
+        ax.set_title("Color mesh of the field (simulation {})".format(self.date))
+        ax.set_xlabel("t [s]")
+        ax.set_ylabel("x [m]")
+        fig.colorbar(im, ax=ax)
+        plt.show()
+
     def fourier(self, *windows, frameskip=1, path=os.path.dirname(os.path.abspath(__file__))):
         ts = int(datetime.datetime.now().timestamp())
         self.fieldfile.seek(0, 0)

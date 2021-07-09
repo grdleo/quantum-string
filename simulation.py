@@ -157,7 +157,7 @@ class Simulation:
         """
             Gives an estimation of the final size of the field file, in MB (Mo in french)
         """
-        bytes_per_cell = 4
+        bytes_per_cell = 20
         return bytes_per_cell*self.s.space_steps*self.time_steps*1e-6
 
     @staticmethod
