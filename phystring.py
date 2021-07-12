@@ -52,7 +52,9 @@ class PhyString:
         ic1 = self.apply_edge(ic1, ic0, 1)
         init_val = np.vstack((ic0, ic1))
         self.field = OneSpaceField(init_val, memory=memory_field)
-    
+
+        self.energy = OneSpaceField(init_val*0.0, memory=5)
+
     def __repr__(self):
         return "[STRING]    L={0:.1f}m, T={1:.1f}N, ρ={2:.1f}g/m, c={3:.1f}m/s ; {4}|~~~~|{5} ; {6} particles".format(
             self.length,
@@ -72,6 +74,7 @@ class PhyString:
         ### IF THE PARTICLES ARE ALL FIXED, NO NEED TO RECOMPUTE THIS EVERY FRAME !!!
         m = self.particles.mass_density()
         k = self.particles.spring_density()
+        rho = self.linear_density + m
         beta = m/(self.linear_density*self.dx)
         gamma = k*self.dx/self.tension
         ###
@@ -85,8 +88,11 @@ class PhyString:
         newval = self.field_evo(last_val, llast_val, last_val_p, last_val_m, beta, gamma) # evolution of the string according to the equations
         newval = self.apply_edge(newval, last_val, tstep + 1) # apply the conditions at both of the edges 
 
+        energy = self.linear_energy(last_val, llast_val, last_val_p, last_val_m, rho, k)
+
         self.field.update(newval) # update field
         self.particles.update() # update particles
+        self.energy.update(energy)
     
     def field_evo(self, u: list[float], utm: list[float], uxp: list[float], uxm: list[float], beta: list[float], gamma: list[float]) -> list[float]:
         """
@@ -100,7 +106,7 @@ class PhyString:
             :param gamma: (see equation)
         """
         dbg = 2.0*beta - gamma
-        return (uxp + uxm + dbg*u)/(1 + beta) - utm
+        return (uxp + uxm + dbg*u)/(1.0 + beta) - utm
 
     def linear_energy(self, u: list[float], utm: list[float], uxp: list[float], uxm: list[float], rho: list[float], kappa: list[float]) -> list[float]:
         le = 0.5*(rho*self.invdt2*(u - utm)**2 + 0.25*self.tension*self.invdx2*(uxp - uxm)**2 + kappa*u*u)

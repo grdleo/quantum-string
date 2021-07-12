@@ -35,10 +35,13 @@ class PostProcess:
     COLOR_GREEN = (0, 255, 0)
     COLOR_BLUE = (255, 0, 0)
 
-    def __init__(self, fieldfile: TextIOWrapper, particlesfile: TextIOWrapper, log=False):
+    def __init__(self, fieldfile: TextIOWrapper, particlesfile: TextIOWrapper, energyfile: TextIOWrapper, log=False):
         self.log = log
+
         self.fieldfile = fieldfile
         self.particlesfile = particlesfile
+        self.energyfile = energyfile
+
         self.infos = json.loads(fieldfile.readline()) # loads the first line to gather the infos about the simulation
         self.date = self.infos["date"]
         self.dx = self.infos[Simulation.STR_DX]
@@ -52,7 +55,29 @@ class PostProcess:
         self.right = self.infos[Simulation.STR_EDGE_RIGHT]
         self.duration = self.dt*self.nt
         self.particles = self.infos["particles"]
+
+        self.c = np.sqrt(self.T/self.rho)
     
+    def energy(self):
+        self.energyfile.seek(0, 0)
+        nrj_tot = []
+
+        t = -1
+        for energyline in self.energyfile:
+            if t >= 0:
+                e = Simulation.str2list(energyline)
+                nrj_tot.append(np.sum(e)*self.L)
+            t += 1
+        
+        tline = np.linspace(0.0, self.duration, self.nt)
+
+        ax = plt.axes()
+        ax.plot(tline, nrj_tot, "b.")
+        ax.set_title("Total energy of the string (simulation {})".format(self.date))
+        ax.set_xlabel("t [s]")
+        ax.set_ylabel("Energy [J]")
+        plt.show()
+        
     def particles_pos(self) -> np.ndarray:
         """
             r[t,n] where r is the position of the particle, t the timestep considered, and n the index of the particle
@@ -73,12 +98,6 @@ class PostProcess:
                 r.append(pos_part)
             t += 1
         return np.array(r)
-
-    @staticmethod
-    def mean_array(a: list[float], amount: int) -> list[float]:
-        mean_size = int(a.size()/amount)
-        r = []
-        i = 0
     
     def img_field(self, baseimg: np.ndarray, f: list[float], p: list[int], anim_params: dict, timestep: int, yscale=1.0) -> np.ndarray:
         """
@@ -189,7 +208,28 @@ class PostProcess:
     @staticmethod
     def reduce_axis(mat: np.ndarray, factor: int, axis=0):
         """
-            Reduction of matrix but only on a single axis
+            Given a matrix (an×m) or (n×am), returns a matrix (n×m) where the cells are the means of the cells surroundings
+
+            ex: 
+            >>> mat = np.array([
+                [0, 1, 2, 3],
+                [4, 5, 6, 7],
+                [8, 9, 10, 11],
+                [12, 13, 14, 15]
+            ])
+            >>> PostProcess.reduce_axis(mat, 2, axis=0)
+            >>> np.array([
+                [0+4, 1+5, 2+6, 3+7],
+                [8+12, 9+13, 10+14, 11+15]
+            ])/2
+            >>> matt = PostProcess.reduce_axis(mat, 2, axis=1)
+            >>> matt
+            >>> np.array([
+                [0+1, 2+3],
+                [4+5, 6+7],
+                [8+9, 10+11],
+                [12+13, 14+15]
+            ])/2
         """
         complementary = 1 if axis == 0 else 0
         s = mat.shape[complementary]
@@ -204,34 +244,6 @@ class PostProcess:
             l, r = r, l
         
         return l.dot(mat).dot(r)/factor
-
-    @staticmethod
-    def reduce_matrix(mat: np.ndarray, a: int) -> np.ndarray:
-        """
-            Given a matrix (an×am), returns a matrix (n×m) where the cells are the means of the cells surroundings
-
-            ex: 
-            >>> mat = np.array([
-                [0, 1, 2, 3],
-                [4, 5, 6, 7],
-                [8, 9, 10, 11],
-                [12, 13, 14, 15]
-            ])
-            >>> PostProcess.reduce_matrix(mat, 2)
-            >>> np.array([
-                [0+1+4+5, 2+3+6+7],
-                [8+9+12+13, 10+11+14+15]
-            ])/(2*2)
-        """
-        an, am = mat.shape
-        if an%a != 0 or am%a != 0:
-            raise ValueError("Error with matrix shape: {} or {} is not a multiple of {}".format(an, am, a))
-        m = am/a
-        n = an/a
-        amat = np.repeat(np.eye(int(n), dtype=float), repeats=a, axis=1)
-        bmat = np.repeat(np.eye(int(m), dtype=float), repeats=a, axis=0)
-
-        return amat.dot(mat).dot(bmat)/(a*a)
     
     @staticmethod
     def prime_factors(num: int) -> list[int]:  
@@ -299,10 +311,10 @@ class PostProcess:
         tsize, xsize = Z.shape
 
         xline = np.linspace(0.0, self.L, xsize)
-        tline = np.linspace(0.0, self.duration, tsize)
+        tline = np.linspace(0.0, self.duration*self.c, tsize)
         X, T = np.meshgrid(xline, tline)
 
-        return T, X, Z
+        return X.T, T.T, Z.T
 
     def plot3d(self, matrix_ideal_res=128):
         fig = plt.figure()
@@ -311,8 +323,8 @@ class PostProcess:
                 rstride=1, cstride=1,
                 cmap='viridis', edgecolor='none')
         ax.set_title("Graph evolution of the field (simulation {})".format(self.date))
-        ax.set_xlabel("t [s]")
-        ax.set_ylabel("x [m]")
+        ax.set_xlabel("x [m]")
+        ax.set_ylabel("ct [m]")
         ax.set_zlabel("u [m]")
         plt.show()
     
@@ -322,8 +334,8 @@ class PostProcess:
         im = ax.pcolormesh(*self.get_field(matrix_ideal_res),
                 cmap="viridis")
         ax.set_title("Color mesh of the field (simulation {})".format(self.date))
-        ax.set_xlabel("t [s]")
-        ax.set_ylabel("x [m]")
+        ax.set_xlabel("x [m]")
+        ax.set_ylabel("ct [m]")
         fig.colorbar(im, ax=ax)
         plt.show()
 

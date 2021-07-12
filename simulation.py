@@ -112,12 +112,16 @@ class Simulation:
 
         field_file_path = os.path.join(path, "QuantumString-field_{}.txt".format(timestamp))
         particles_file_path = os.path.join(path, "QuantumString-particles_{}.txt".format(timestamp))
+        energy_field_path = os.path.join(path, "QuantumString-energy_{}.txt".format(timestamp))
 
         begtxt = "{}\n".format(jsoninfos)
         ff = open(field_file_path, "w", encoding="utf-8")
         pf = open(particles_file_path, "w", encoding="utf-8")
+        ef = open(energy_field_path, "w", encoding="utf-8")
+
         ff.write(begtxt)
         pf.write(begtxt)
+        ef.write(begtxt)
 
         ts = datetime.datetime.now()
         percent = 0
@@ -134,7 +138,7 @@ class Simulation:
                 dtcompute = (newts - ts).total_seconds()
                 elapsed = sum(list_dt_compute)
                 list_dt_compute.append(dtcompute)
-                spinner = "←↖↑↗→↘↓↙" # ".ₒoO0Ooₒ" # "+÷–÷" # "+×" #
+                spinner = "⡀⡁⡂⡃⡄⡅⡆⡇⡈⡉⡊⡋⡌⡍⡎⡏⡐⡑⡒⡓⡔⡕⡖⡗⡘⡙⡚⡛⡜⡝⡞⡟⡠⡡⡢⡣⡤⡥⡦⡧⡨⡩⡪⡫⡬⡭⡮⡯⡰⡱⡲⡳⡴⡵⡶⡷⡸⡹⡺⡻⡼⡽⡾⡿⢀⢁⢂⢃⢄⢅⢆⢇⢈⢉⢊⢋⢌⢍⢎⢏⢐⢑⢒⢓⢔⢕⢖⢗⢘⢙⢚⢛⢜⢝⢞⢟⢠⢡⢢⢣⢤⢥⢦⢧⢨⢩⢪⢫⢬⢭⢮⢯⢰⢱⢲⢳⢴⢵⢶⢷⢸⢹⢺⢻⢼⢽⢾⢿⣀⣁⣂⣃⣄⣅⣆⣇⣈⣉⣊⣋⣌⣍⣎⣏⣐⣑⣒⣓⣔⣕⣖⣗⣘⣙⣚⣛⣜⣝⣞⣟⣠⣡⣢⣣⣤⣥⣦⣧⣨⣩⣪⣫⣬⣭⣮⣯⣰⣱⣲⣳⣴⣵⣶⣷⣸⣹⣺⣻⣼⣽⣾⣿"
                 load = percent % len(spinner)
                 print("{:2}% {} {:.4f}s left                ".format(int(percent/Simulation.PERCENT_MAX*100), spinner[load:load+1],  float(elapsed*(1/prop-1))), end="\r")
                 ts = newts
@@ -144,14 +148,22 @@ class Simulation:
             # writing the fields in the files
             f = self.s.field.get_val_time(t)
             pp = self.s.particles.list_pos(tstep=t)
+            e = self.s.energy.get_val_time(t)
+
             fstr = Simulation.list2str(f)
             pstr = Simulation.list2str(pp)
+            estr = Simulation.list2str(e)
+
             ff.write("{}\n".format(fstr))
             pf.write("{}\n".format(pstr))
-            # ...
+            ef.write("{}\n".format(estr))
         print("")
 
-        return field_file_path, particles_file_path
+        ff.close()
+        pf.close()
+        ef.close()
+
+        return field_file_path, particles_file_path, energy_field_path
     
     def size_estimation_mb(self) -> float:
         """
