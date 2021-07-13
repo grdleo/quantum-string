@@ -49,7 +49,24 @@ class PhyString:
         if len(ic0) != space_steps or len(ic1) != space_steps:
             raise ValueError("Initial conditions shapes for initial positions not matching! ")
 
-        ic1 = self.apply_edge(ic1, ic0, 1)
+        ### MASKS COMPUTATION (for absorbers) ###
+        self.mask_utm = [1.0]*self.space_steps
+        self.mask_uxp = [1.0]*self.space_steps
+        self.mask_uxm = [1.0]*self.space_steps
+
+        if self.edge_left.absorber:
+            self.mask_utm[0] = 0.0
+            self.mask_uxm[0] = 0.0
+        if self.edge_right.absorber:
+            self.mask_utm[-1] = 0.0
+            self.mask_uxp[-1] = 0.0
+        
+        self.mask_utm = np.array(self.mask_utm)
+        self.mask_uxp = np.array(self.mask_uxp)
+        self.mask_uxm = np.array(self.mask_uxm)
+        ###
+
+        ic1 = self.apply_edge(ic1, 1)
         init_val = np.vstack((ic0, ic1))
         self.field = OneSpaceField(init_val, memory=memory_field)
 
@@ -86,14 +103,14 @@ class PhyString:
         last_val_p = PhyString.shift_list_left(last_val) # field at t left shifted. means that at x position, will return value at x + 1
 
         newval = self.field_evo(last_val, llast_val, last_val_p, last_val_m, beta, gamma) # evolution of the string according to the equations
-        newval = self.apply_edge(newval, last_val, tstep + 1) # apply the conditions at both of the edges 
+        newval = self.apply_edge(newval, tstep + 1) # apply the conditions at both of the edges 
 
         energy = self.linear_energy(last_val, llast_val, last_val_p, last_val_m, rho, k)
 
         self.field.update(newval) # update field
         self.particles.update() # update particles
         self.energy.update(energy)
-    
+            
     def field_evo(self, u: list[float], utm: list[float], uxp: list[float], uxm: list[float], beta: list[float], gamma: list[float]) -> list[float]:
         """
             Given the field, returns the evolution in time
@@ -106,7 +123,7 @@ class PhyString:
             :param gamma: (see equation)
         """
         dbg = 2.0*beta - gamma
-        return (uxp + uxm + dbg*u)/(1.0 + beta) - utm
+        return (uxp*self.mask_uxp + uxm*self.mask_uxm + u*dbg)/(1.0 + beta) - utm*self.mask_utm
 
     def linear_energy(self, u: list[float], utm: list[float], uxp: list[float], uxm: list[float], rho: list[float], kappa: list[float]) -> list[float]:
         cin = rho*self.invdt2*(u - utm)**2
@@ -119,7 +136,7 @@ class PhyString:
         le = 0.5*(cin + ten + spr)
         return le
     
-    def apply_edge(self, f: list[float], ftm: list[float], t: int) -> list[float]:
+    def apply_edge(self, f: list[float], t: int) -> list[float]:
         """
             Apply the edge conditions to the string
 
@@ -128,14 +145,15 @@ class PhyString:
         """
         u = np.copy(f)
 
-        type_left = type(self.edge_left)
-        type_right = type(self.edge_right)
-
-        if type_left != LoopEdge:
-            u[0] = ftm[1] if type_left == AbsorberEdge else self.edge_left.condition(t)
-        
-        if type_right != LoopEdge:
-            u[-1] = ftm[-2] if type_right == AbsorberEdge else self.edge_right.condition(t)
+        try:
+            u[0] = self.edge_left.condition(t)
+        except TypeError:
+            pass
+            
+        try:
+            u[-1] = self.edge_right.condition(t)
+        except TypeError: 
+            pass
 
         return u
 

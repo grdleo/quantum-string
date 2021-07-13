@@ -2,7 +2,7 @@ from datetime import time
 import os
 
 from quantumstring.simulation import CenterFixed, FreeString, RingString, Simulation, Cavity
-from quantumstring.edge import MirrorEdge, ExcitatorSin, AbsorberEdge
+from quantumstring.edge import ExcitatorSinAbsorber, MirrorEdge, ExcitatorSin, AbsorberEdge
 from quantumstring.particle import Particles, Particle
 from quantumstring.process import PostProcess
 
@@ -32,8 +32,8 @@ ps = Particles(*p, space_steps=space_steps)
 
 examp = 0.05 # [m]
 expuls = 2*np.pi*50 # [rad/s]
-left = ExcitatorSin(dt, examp, expuls, 0.0)
-right = AbsorberEdge()
+left = ExcitatorSinAbsorber(dt, examp, expuls, 0.0)
+right = MirrorEdge()
 
 ic0 = [0.0]*space_steps
 ic1 = [0.0]*space_steps

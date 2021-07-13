@@ -1,3 +1,4 @@
+from os import abort
 import numpy as np
 
 import random
@@ -12,8 +13,10 @@ class Edge:
         A class to handle edges conditions of the string
     """
 
-    def __init__(self, condition: Callable):
+    def __init__(self, condition: Callable, absorber=False, loop=False):
         self.condition = condition
+        self.absorber = absorber
+        self.loop = loop
 
     def __repr__(self):
         return "Edge not specified"
@@ -34,7 +37,8 @@ class AbsorberEdge(Edge):
         Inheritence from Edge: simulate an absorber
     """
     def __init__(self):
-        super().__init__(None)
+        condition = lambda tstep: 0.0
+        super().__init__(condition, absorber=True)
     
     def __repr__(self):
         return "Edge: absorber"
@@ -45,7 +49,7 @@ class LoopEdge(Edge):
         considering my code, this is equivalent with no condition at all
     """
     def __init__(self):
-        super().__init__(None)
+        super().__init__(None, loop=True)
     
     def __repr__(self):
         return "Edge: loop"
@@ -61,9 +65,9 @@ class ExcitatorEdge(Edge):
     infostring: str
     """ Information about the excitator """
 
-    def __init__(self, excitation):
+    def __init__(self, excitation, absorber=False):
         self.infostring = "Excitator: not yet defined"
-        super().__init__(excitation)
+        super().__init__(excitation, absorber=absorber)
     
     def __add__(self, other: ExcitatorEdge) -> ExcitatorEdge:
         sumcond = lambda tstep: self.condition(tstep) + other.condition(tstep)
@@ -90,7 +94,7 @@ class ExcitatorEdge(Edge):
         return self.infostring
 
 class ExcitatorSin(ExcitatorEdge):
-    def __init__(self, dt: float, amplitude: float, pulsation: float, delay: float):
+    def __init__(self, dt: float, amplitude: float, pulsation: float, delay: float, absorber=False):
         """
             Creates a sinusoidal excitator
 
@@ -100,29 +104,15 @@ class ExcitatorSin(ExcitatorEdge):
             :param delay: time to wait before starting the excitator [s]
         """
         steps_delay = int(np.round(delay/dt))
-        def sin(tstep):
+        def sin(tstep: int):
             delayed = tstep - steps_delay
             return amplitude*np.sin(pulsation*delayed*dt) if delayed >= 0 else 0.0
-        super().__init__(sin)
+        super().__init__(sin, absorber=absorber)
         self.infostring = "sin[A={:.3f}m, ω={:.1f}rad/s{}]".format(amplitude, pulsation, "" if delay == 0.0 else ", delay={}".format(delay))
 
-class ExcitatorSinPeriod(ExcitatorEdge):
-    def __init__(self, dt: float, amplitude: float, pulsation: float, delay: float, nb_periods=1):
-        """
-            Creates a sinusoidal excitator, but excite inly for a given number of periods
-
-            :param dt: Δt of the simulation [s]
-            :param amplitude: amplitude of the sine [m]
-            :param pulsation: pulsation of the sine [rad/s]
-            :param delay: time to wait before starting the excitator [s]
-            :param nb_periods: number of full periods to excite
-        """
-        steps_delay = int(np.round(delay/dt))
-        def sin(tstep):
-            delayed = tstep - steps_delay
-            return amplitude*np.sin(pulsation*delayed*dt) if delayed >= 0 and delayed*dt <= nb_periods*2*np.pi/pulsation else 0.0
-        super().__init__(sin)
-        self.infostring = "sin[periods={}, A={:.3f}m, ω={:.1f}rad/s{}]".format(nb_periods, amplitude, pulsation, "" if delay == 0.0 else ", delay={}".format(delay))
+class ExcitatorSinAbsorber(ExcitatorSin):
+    def __init__(self, dt: float, amplitude: float, pulsation: float, delay: float):
+        super().__init__(dt, amplitude, pulsation, delay, absorber=True)
 
 class ExcitatorPulse(ExcitatorEdge):
     """
@@ -132,14 +122,14 @@ class ExcitatorPulse(ExcitatorEdge):
         :param amplitude: amplitude of the pulse [m]
         :param duration: duration of the pulse [s]
     """
-    def __init__(self, dt: float, amplitude: float, duration: float):
+    def __init__(self, dt: float, amplitude: float, duration: float, absorber=False):
         pulse = lambda tstep: amplitude if tstep*dt <= duration else 0.0 
-        super().__init__(pulse)
+        super().__init__(pulse, absorber=absorber)
         self.infostring = "pulse[A={:.3f}m, T={:.1f}s]".format(amplitude, duration)
 
 class ExcitatorWhiteNoise(ExcitatorEdge):
-    def __init__(self, dt: float, amp_min: float, amp_max: float, duration: float):
+    def __init__(self, dt: float, amp_min: float, amp_max: float, duration: float, absorber=False):
         amp_delta = np.abs(amp_max - amp_min)
         noise = lambda tstep: random.random()*amp_delta + amp_min if tstep*dt <= duration else 0.0
-        super().__init__(noise)
+        super().__init__(noise, absorber=absorber)
         self.infostring = "white[{:.3f}m, {:.3f}m".format(amp_min, amp_max)
