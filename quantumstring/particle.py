@@ -4,7 +4,7 @@ import random
 
 import numpy as np
 
-from field import OneSpaceField
+from quantumstring.field import OneSpaceField
 
 """
     Classes for dealing with particles on the string

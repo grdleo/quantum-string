@@ -12,12 +12,9 @@ from matplotlib import pyplot as plt
 from PIL import Image, ImageDraw, ImageFont
 from mpl_toolkits import mplot3d
 
-
-
-
-from field import OneSpaceField
-from simulation import Simulation
-from particle import Particle, Particles
+from quantumstring.field import OneSpaceField
+from quantumstring.simulation import Simulation
+from quantumstring.particle import Particle, Particles
 
 """
     Class for loading a simulation and post process the data
@@ -28,7 +25,7 @@ class PostProcess:
     FOURIER_PREFIX = "FourierTransform"
     SPECTRO_PREFIX = "FourierSpectro"
 
-    COLOR_BLACK = (1, 1, 1)
+    COLOR_BLACK = (0, 0, 0)
     COLOR_GRAY = (192, 192, 192)
     COLOR_WHITE = (255, 255, 255)
     COLOR_RED = (0, 0, 255)
@@ -66,7 +63,7 @@ class PostProcess:
         for energyline in self.energyfile:
             if t >= 0:
                 e = Simulation.str2list(energyline)
-                nrj_tot.append(np.sum(e)*self.L)
+                nrj_tot.append(np.sum(e)*self.dx)
             t += 1
         
         tline = np.linspace(0.0, self.duration, self.nt)
@@ -76,6 +73,18 @@ class PostProcess:
         ax.set_title("Total energy of the string (simulation {})".format(self.date))
         ax.set_xlabel("t [s]")
         ax.set_ylabel("Energy [J]")
+        plt.show()
+    
+    def plot_particles(self) -> None:
+        pp = self.particles_pos()
+        tline = np.linspace(0, self.duration, self.nt)
+        ax = plt.axes()
+        for pos, part in zip(pp.T, self.particles):
+            c = tuple(np.array(part[Particle.STR_COLOR])/255.0)
+            ax.plot(tline, pos, color=c)
+        ax.set_title("Particles vertical position (simulation {})".format(self.date))
+        ax.set_xlabel("t [s]")
+        ax.set_ylabel("z [m]")
         plt.show()
         
     def particles_pos(self) -> np.ndarray:
@@ -292,7 +301,7 @@ class PostProcess:
                 all_factors.append(nb)
             all_factors = np.array(all_factors)
             factor = all_factors[np.abs(i/all_factors - ideal).argmin()]
-            mat = PostProcess.reduce_axis(mat, factor, axis=axis)
+            mat = PostProcess.reduce_axis(mat, factor, axis=axis) if i > ideal else mat
 
         return mat
     
@@ -307,7 +316,7 @@ class PostProcess:
         Z = np.array(Z)
 
         ideal_size = (matrix_ideal_res, matrix_ideal_res) # Z matrix is often too large to be plot correctly...
-        Z = PostProcess.reduce_space(Z, ideal_size)
+        Z = PostProcess.reduce_space(Z, ideal_size) if matrix_ideal_res < np.inf else Z
         tsize, xsize = Z.shape
 
         xline = np.linspace(0.0, self.L, xsize)
@@ -316,23 +325,24 @@ class PostProcess:
 
         return X.T, T.T, Z.T
 
-    def plot3d(self, matrix_ideal_res=128):
+    def plot3d(self, matrix_ideal_res=128, cmap="viridis"):
         fig = plt.figure()
         ax = plt.axes(projection='3d')
         ax.plot_surface(*self.get_field(matrix_ideal_res),
                 rstride=1, cstride=1,
-                cmap='viridis', edgecolor='none')
+                cmap=cmap, edgecolor='none')
         ax.set_title("Graph evolution of the field (simulation {})".format(self.date))
         ax.set_xlabel("x [m]")
         ax.set_ylabel("ct [m]")
         ax.set_zlabel("u [m]")
         plt.show()
     
-    def plot2d(self, matrix_ideal_res=512):
+    def plot2d(self, matrix_ideal_res=np.inf, cmap="viridis"):
         fig = plt.figure()
         ax = plt.axes()
         im = ax.pcolormesh(*self.get_field(matrix_ideal_res),
-                cmap="viridis")
+                cmap=cmap,
+                rasterized=True)
         ax.set_title("Color mesh of the field (simulation {})".format(self.date))
         ax.set_xlabel("x [m]")
         ax.set_ylabel("ct [m]")

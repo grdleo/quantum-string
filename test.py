@@ -1,14 +1,12 @@
 from datetime import time
+import os
 
-from matplotlib.pyplot import yscale
 from particle import Particle, Particles
 from simulation import CenterFixed, FreeString, RingString, Simulation, Cavity
 from edge import MirrorEdge, ExcitatorSin, AbsorberEdge
 from process import PostProcess
 
 import numpy as np
-
-import os
 
 mypath = os.path.dirname(os.path.abspath(__file__))
 mypath = "C:\\Users\\leog\\Desktop\\lg2021stage\\output"
@@ -32,7 +30,8 @@ omega = c*k
 mysin = lambda x, t: 0.05*np.sin(k*x)*np.cos(omega*t)
 
 p = Particles(
-    Particle(int(0.5*space_steps), 0.0, 0.001, omega, True, space_steps)
+    space_steps=space_steps
+    # Particle(int(0.5*space_steps), 0.0, 0.001, omega, True, space_steps)
 )
 
 ic0 = mysin(xline, 0.0)
@@ -69,6 +68,6 @@ process = PostProcess(
 )
 
 process.anim(mypath)
-# process.energy()
+process.energy()
 process.plot2d()
 # process.plot3d()

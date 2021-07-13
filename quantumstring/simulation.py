@@ -4,9 +4,9 @@ import math
 import datetime
 import json
 
-from phystring import PhyString
-from particle import Particle, Particles
-from edge import Edge, MirrorEdge, LoopEdge
+from quantumstring.phystring import PhyString
+from quantumstring.particle import Particle, Particles
+from quantumstring.edge import Edge, MirrorEdge, LoopEdge
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -101,7 +101,7 @@ class Simulation:
     def run(self, path: str) -> tuple[str, str]:
         """
             Runs the simulation with options to save it as a animation and/or in a file
-            Returns the path of the field and particles file generated (if generated)
+            Returns the path of the field, particles and energy file generated
 
             :param path: location where to save the outputs
         """

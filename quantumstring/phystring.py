@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from field import OneSpaceField 
-from edge import Edge, LoopEdge, AbsorberEdge
-from particle import Particles
+from quantumstring.field import OneSpaceField 
+from quantumstring.edge import Edge, LoopEdge, AbsorberEdge
+from quantumstring.particle import Particles
 
 """
     Class for dealing with the actual string
@@ -109,9 +109,14 @@ class PhyString:
         return (uxp + uxm + dbg*u)/(1.0 + beta) - utm
 
     def linear_energy(self, u: list[float], utm: list[float], uxp: list[float], uxm: list[float], rho: list[float], kappa: list[float]) -> list[float]:
-        le = 0.5*(rho*self.invdt2*(u - utm)**2 + 0.25*self.tension*self.invdx2*(uxp - uxm)**2 + kappa*u*u)
-        le[0] = 0.0 # edges not taken in count
-        le[-1] = 0.0
+        cin = rho*self.invdt2*(u - utm)**2
+        ten = 0.25*self.tension*self.invdx2*(uxp - uxm)**2
+        spr = kappa*u*u
+
+        ten[0] = 0.0
+        ten[-1] = 0.0
+
+        le = 0.5*(cin + ten + spr)
         return le
     
     def apply_edge(self, f: list[float], ftm: list[float], t: int) -> list[float]:
