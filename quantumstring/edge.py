@@ -30,7 +30,7 @@ class MirrorEdge(Edge):
         super().__init__(condition)
     
     def __repr__(self):
-        return "Edge: mirror"
+        return "mirror"
 
 class AbsorberEdge(Edge):
     """
@@ -41,7 +41,7 @@ class AbsorberEdge(Edge):
         super().__init__(condition, absorber=True)
     
     def __repr__(self):
-        return "Edge: absorber"
+        return "absorber"
 
 class LoopEdge(Edge):
     """
@@ -52,7 +52,7 @@ class LoopEdge(Edge):
         super().__init__(None, loop=True)
     
     def __repr__(self):
-        return "Edge: loop"
+        return "loop"
 
 class ExcitatorEdge(Edge):
     pass
@@ -111,8 +111,13 @@ class ExcitatorSin(ExcitatorEdge):
         self.infostring = "sin[A={:.3f}m, ω={:.1f}rad/s{}]".format(amplitude, pulsation, "" if delay == 0.0 else ", delay={}".format(delay))
 
 class ExcitatorSinAbsorber(ExcitatorSin):
-    def __init__(self, dt: float, amplitude: float, pulsation: float, delay: float):
-        super().__init__(dt, amplitude, pulsation, delay, absorber=True)
+    def __init__(self, dt: float, amplitude: float, pulsation: float):
+        """
+            !!! because of calculations for absorbing, the 'effective' sine that is propagating has his amplitude HALVED...
+            !!! so that what user is entering is consistent, we double the amplitude the user is entering...
+        """
+        super().__init__(dt, 2.0*amplitude, pulsation, 0.0, absorber=True)
+        self.infostring = "sin[A={:.3f}m, ω={:.1f}rad/s] & absorber".format(amplitude, pulsation)
 
 class ExcitatorPulse(ExcitatorEdge):
     """

@@ -96,7 +96,7 @@ class Simulation:
             self.s.space_steps,
             self.s,
             self.s.particles,
-            self.size_estimation_mb())
+            int(self.size_estimation_mb()))
 
     def run(self, path: str) -> tuple[str, str]:
         """

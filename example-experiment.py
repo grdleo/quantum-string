@@ -2,7 +2,7 @@ from datetime import time
 import os
 
 from quantumstring.simulation import CenterFixed, FreeString, RingString, Simulation, Cavity
-from quantumstring.edge import MirrorEdge, ExcitatorSin, AbsorberEdge
+from quantumstring.edge import ExcitatorSinAbsorber, MirrorEdge, ExcitatorSin, AbsorberEdge
 from quantumstring.particle import Particles, Particle
 from quantumstring.process import PostProcess
 
@@ -26,15 +26,14 @@ duration = dt*time_steps
 pmass = 0.005 # [kg]
 ppuls = 2*np.pi*1 # [rad/s]
 p = [
-        Particle(int(space_steps*0.6), 0.0, pmass, ppuls, True, space_steps)
+        #Particle(int(space_steps*0.6), 0.0, pmass, ppuls, True, space_steps)
 ]
-ps = Particles(*p)
+ps = Particles(*p, space_steps=space_steps)
 
 examp = 0.05 # [m]
 expuls = 2*np.pi*50 # [rad/s]
-left = ExcitatorSin(dt, examp, expuls, 0.0)
-right = MirrorEdge()
-
+right = ExcitatorSin(dt, examp, expuls, 0.0)
+left = MirrorEdge()
 ic0 = [0.0]*space_steps
 ic1 = [0.0]*space_steps
 
@@ -48,7 +47,7 @@ process = PostProcess(
     open(epath, "r")
 )
 
-# process.anim(mypath)
-process.plot_particles()
-process.plot2d()
-process.energy()
+process.anim(mypath)
+#process.plot_particles()
+#process.plot2d()
+#process.energy()

@@ -11,7 +11,7 @@ import numpy as np
 mypath = os.path.dirname(os.path.abspath(__file__))
 mypath = "C:\\Users\\leog\\Desktop\\lg2021stage\\output"
 
-duration = 0.5 # [s]
+duration = 1.0 # [s]
 space_steps = 511
 length = 1.0 # [m]
 tension = 1.0 # [N]
@@ -23,17 +23,17 @@ dt = dx/c
 time_steps = int(duration/dt)
 duration = dt*time_steps
 
-pmass = 0.005 # [kg]
-ppuls = 2*np.pi*1 # [rad/s]
+pmass = 0.01 # [kg]
+ppuls = 2*np.pi*40 # [rad/s]
 p = [
-        #Particle(int(space_steps*0.5), 0.0, pmass, ppuls, True, space_steps)
+        Particle(int(space_steps*0.5), 0.0, pmass, ppuls, True, space_steps)
 ]
 ps = Particles(*p, space_steps=space_steps)
 
 examp = 0.05 # [m]
 expuls = 2*np.pi*50 # [rad/s]
-left = ExcitatorSinAbsorber(dt, examp, expuls, 0.0)
-right = MirrorEdge()
+left = ExcitatorSinAbsorber(dt, examp, expuls)
+right = AbsorberEdge()
 
 ic0 = [0.0]*space_steps
 ic1 = [0.0]*space_steps
@@ -48,4 +48,4 @@ process = PostProcess(
     open(epath, "r")
 )
 
-process.anim(mypath, frameskip=5)
+process.anim(mypath, frameskip=3)

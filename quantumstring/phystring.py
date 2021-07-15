@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from quantumstring.field import OneSpaceField 
-from quantumstring.edge import Edge, LoopEdge, AbsorberEdge
+from quantumstring.edge import Edge, LoopEdge, AbsorberEdge, ExcitatorSinAbsorber
 from quantumstring.particle import Particles
 
 """
@@ -49,24 +49,6 @@ class PhyString:
         if len(ic0) != space_steps or len(ic1) != space_steps:
             raise ValueError("Initial conditions shapes for initial positions not matching! ")
 
-        ### MASKS COMPUTATION (for absorbers) ###
-        self.mask_utm = [1.0]*self.space_steps
-        self.mask_uxp = [1.0]*self.space_steps
-        self.mask_uxm = [1.0]*self.space_steps
-
-        if self.edge_left.absorber:
-            self.mask_utm[0] = 0.0
-            self.mask_uxm[0] = 0.0
-        if self.edge_right.absorber:
-            self.mask_utm[-1] = 0.0
-            self.mask_uxp[-1] = 0.0
-        
-        self.mask_utm = np.array(self.mask_utm)
-        self.mask_uxp = np.array(self.mask_uxp)
-        self.mask_uxm = np.array(self.mask_uxm)
-        ###
-
-        ic1 = self.apply_edge(ic1, 1)
         init_val = np.vstack((ic0, ic1))
         self.field = OneSpaceField(init_val, memory=memory_field)
 
@@ -102,8 +84,7 @@ class PhyString:
         last_val_m = PhyString.shift_list_right(last_val) # field at t right shifted. means that at x position, will return value at x - 1
         last_val_p = PhyString.shift_list_left(last_val) # field at t left shifted. means that at x position, will return value at x + 1
 
-        newval = self.field_evo(last_val, llast_val, last_val_p, last_val_m, beta, gamma) # evolution of the string according to the equations
-        newval = self.apply_edge(newval, tstep + 1) # apply the conditions at both of the edges 
+        newval = self.field_evo(last_val, llast_val, last_val_p, last_val_m, beta, gamma, tstep) # evolution of the string according to the equations
 
         energy = self.linear_energy(last_val, llast_val, last_val_p, last_val_m, rho, k)
 
@@ -111,7 +92,7 @@ class PhyString:
         self.particles.update() # update particles
         self.energy.update(energy)
             
-    def field_evo(self, u: list[float], utm: list[float], uxp: list[float], uxm: list[float], beta: list[float], gamma: list[float]) -> list[float]:
+    def field_evo(self, u: list[float], utm: list[float], uxp: list[float], uxm: list[float], beta: list[float], gamma: list[float], tstep: int) -> list[float]:
         """
             Given the field, returns the evolution in time
 
@@ -123,7 +104,30 @@ class PhyString:
             :param gamma: (see equation)
         """
         dbg = 2.0*beta - gamma
-        return (uxp*self.mask_uxp + uxm*self.mask_uxm + u*dbg)/(1.0 + beta) - utm*self.mask_utm
+        utp = (uxp+ uxm + u*dbg)/(1.0 + beta) - utm
+
+        if self.edge_left.absorber:
+            exabs = 0.0
+            if type(self.edge_left) == ExcitatorSinAbsorber:
+                exabs = self.edge_left.condition(tstep) - self.edge_left.condition(tstep - 1)
+            utp[1] = u[2] - exabs
+        if self.edge_right.absorber:
+            exabs = 0.0
+            if type(self.edge_right) == ExcitatorSinAbsorber:
+                exabs = self.edge_right.condition(tstep) - self.edge_right.condition(tstep - 1)
+            utp[-2] = u[-3] - exabs
+        
+        try:
+            utp[0] = self.edge_left.condition(tstep + 1)
+        except TypeError:
+            pass
+            
+        try:
+            utp[-1] = self.edge_right.condition(tstep + 1)
+        except TypeError: 
+            pass
+
+        return utp
 
     def linear_energy(self, u: list[float], utm: list[float], uxp: list[float], uxm: list[float], rho: list[float], kappa: list[float]) -> list[float]:
         cin = rho*self.invdt2*(u - utm)**2

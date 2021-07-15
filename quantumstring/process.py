@@ -120,9 +120,9 @@ class PostProcess:
             :param infos: if True, prompt information of the simulation on video
         """
         img = np.copy(baseimg)
-        x = np.linspace(anim_params["ox"], anim_params["endstring"], f.size)
-        y = (-anim_params["ppx_per_m"]*yscale*f + anim_params["oy"])
-        string = np.array([(x[i], y[i]) for i in range(0, f.size)]).astype(np.int32)
+        x = np.linspace(anim_params["ox"], anim_params["endstring"], f.size).astype(np.int32)
+        y = (-anim_params["ppx_per_m"]*yscale*f + anim_params["oy"]).astype(np.int32)
+        string = np.array([(x[i], y[i]) for i in range(1, f.size - 1)])
         string = string.reshape((-1, 1, 2))
 
         cv2.polylines(img, [string], False, PostProcess.COLOR_WHITE)
@@ -133,6 +133,9 @@ class PostProcess:
         for pidx, part in zip(p, self.particles):
             center = (int(x[pidx]), int(y[pidx]))
             cv2.circle(img, center, r, part[Particle.STR_COLOR], -1)
+
+        img[y[0], x[0]] = PostProcess.COLOR_GRAY
+        img[y[len(y)-1], x[len(x)-1]] = PostProcess.COLOR_GRAY
         
         return img
 
