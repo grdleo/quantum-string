@@ -221,7 +221,8 @@ class CenterFixed(RestString):
     """
     def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, edge_left: Edge, edge_right: Edge, mass_particle: float, pulsation_particle: float, log=True, memory_field=5):
         center_string = math.floor(space_steps*0.5)
-        p = Particle(center_string, 0.0, mass_particle, pulsation_particle, True, space_steps)
+        stiffness = mass_particle*pulsation_particle**2
+        p = Particle(center_string, 0.0, mass_particle, stiffness, True, space_steps)
         particles = Particles(p)
         super().__init__(dt, time_steps, space_steps, string_len, string_density, string_tension, edge_left, edge_right, particles, log=log, memory_field=memory_field)
 

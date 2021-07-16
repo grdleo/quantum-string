@@ -75,17 +75,17 @@ class PostProcess:
         ax.set_ylabel("Energy [J]")
         plt.show()
     
-    def plot_particles(self) -> None:
+    def plot_particles(self, ax=plt.axes(), show=True, label="") -> None:
         pp = self.particles_pos()
         tline = np.linspace(0, self.duration, self.nt)
-        ax = plt.axes()
         for pos, part in zip(pp.T, self.particles):
             c = tuple(np.array(part[Particle.STR_COLOR])/255.0)
             ax.plot(tline, pos, color=c)
+            ax.legend([label])
         ax.set_title("Particles vertical position (simulation {})".format(self.date))
         ax.set_xlabel("t [s]")
         ax.set_ylabel("z [m]")
-        plt.show()
+        plt.show() if show else None
         
     def particles_pos(self) -> np.ndarray:
         """

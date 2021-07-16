@@ -17,6 +17,7 @@ class Particle:
     STR_MASS = "m"
     STR_PULSATION = "omega"
     STR_COLOR = "color"
+    STR_STIFFNESS = "k"
 
     mass: float
     """ Mass *m* of the particle [kg] """
@@ -27,14 +28,14 @@ class Particle:
     fixed: bool
     """ if True, the particle is fixed on the string """
 
-    def __init__(self, pos: int, vel: float, mass: float, pulsation: float, fixed: bool, space_steps: int, color=(0, 0, 255)):
+    def __init__(self, pos: int, vel: float, mass: float, stiffness: float, fixed: bool, space_steps: int, color=(0, 0, 255)):
         """
             Initalises a particle
 
             :param pos: index of the cell to be for the particle
             :param vel: initial (vertical) velocity of particle [m/s]
             :param mass: mass of the particle [kg]
-            :param pulsation: pulsation of the particle [rad/s]
+            :param stiffness: stiffness of the spring [kg/s²]
             :param fixed: is the particle fixed horizontally on the bench?
             :param space_steps: number of cells in the string
             :type pos: float
@@ -45,12 +46,12 @@ class Particle:
             :type space_steps: int
         """
         self.mass = mass
-        self.pulsation = pulsation
+        self.stiffness = stiffness
+        self.pulsation = np.sqrt(stiffness/mass)
         self.space_steps = space_steps
         self.fixed = fixed
         self._firstpos = pos
         pos_next = pos
-        self.color = color
 
         if not 0 <= pos < space_steps:
             raise ValueError("Cell position of particle {} is not on the string [0, {}]".format(pos, space_steps - 1))
@@ -60,9 +61,21 @@ class Particle:
         
         init_val =np.vstack((pos, pos_next))
         self.pos = OneSpaceField(init_val, memory=5)
-    
+
+        if type(color) == tuple:
+            pass
+        elif type(color) == str:
+            color = color.lstrip("#")
+            try:
+                color = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
+            except:
+                raise ValueError("'{}' not a hexadecimal color!".format(color))
+        else:
+            raise ValueError("'{}' is not a valid color!".format(color))
+        self.color = color
+
     def __repr__(self):
-        return "m={:.2f}kg, ω={:.2f}rad/s;".format(self.mass, self.pulsation)
+        return "m={:.2f}kg, k={:.2f}kg/s², ω={:.2f}rad/s;".format(self.mass, self.stiffness, self.pulsation)
     
     def infos(self) -> dict:
         """
@@ -70,6 +83,7 @@ class Particle:
         """
         return {
             Particle.STR_MASS: self.mass,
+            Particle.STR_STIFFNESS: self.stiffness,
             Particle.STR_PULSATION: self.pulsation,
             Particle.STR_COLOR: self.color
         }
@@ -199,7 +213,7 @@ class Particles:
         if not self.empty:
             for p in self.particles:
                 pos = int(p.pos.get_val_time(tstep)) # get the position of each particle
-                s[pos] += 0.0 if fixed and not p.fixed else p.mass*p.pulsation*p.pulsation # increment the vector where the particle is
+                s[pos] += 0.0 if fixed and not p.fixed else p.stiffness # increment the vector where the particle is
         return np.array(s)
 
     def mass_presence(self, tstep=-1, fixed=False) -> list[bool]:
