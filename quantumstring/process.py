@@ -32,7 +32,7 @@ class PostProcess:
     COLOR_GREEN = (0, 255, 0)
     COLOR_BLUE = (255, 0, 0)
 
-    def __init__(self, fieldfile: TextIOWrapper, particlesfile: TextIOWrapper, energyfile: TextIOWrapper, log=False):
+    def __init__(self, fieldfile: TextIOWrapper, particlesfile: TextIOWrapper, energyfile: TextIOWrapper, log=True):
         self.log = log
 
         self.fieldfile = fieldfile
@@ -86,6 +86,17 @@ class PostProcess:
         ax.set_xlabel("t [s]")
         ax.set_ylabel("z [m]")
         plt.show() if show else None
+    
+    @staticmethod
+    def file2matrix(file: TextIOWrapper, type=float) -> np.ndarray:
+        file.seek(0, 0)
+        r = []
+        t = -1
+        for field in file:
+            if t >= 0:
+                r.append(Simulation.str2list(field, type=type)) if field != "\n" else None
+            t += 1
+        return np.array(r)
         
     def particles_pos(self) -> np.ndarray:
         """
@@ -139,7 +150,7 @@ class PostProcess:
         
         return img
 
-    def anim(self, path: str, title=False, resolution=(720, 480), fps=60, frameskip=1, yscale=1.0, log=True, compress=True):
+    def anim(self, path: str, title=False, resolution=(720, 480), fps=60, frameskip=1, yscale=1.0, compress=True):
         ts = int(datetime.datetime.now().timestamp())
         self.fieldfile.seek(0, 0)
         self.particlesfile.seek(0, 0)
@@ -188,11 +199,11 @@ class PostProcess:
 
         video = cv2.VideoWriter(videopath, cv2.VideoWriter_fourcc(*'mp4v'), fps, (lx, ly))
 
-        print("Animation for {} simulation:".format(self.date))
+        print("Animation for {} simulation:".format(self.date)) if self.log else None
         t = -1
         for field, particles in zip(self.fieldfile, self.particlesfile):
             if t >= 0: # the file has a one-line header (json format)
-                print("{}/{} images processed".format(int(t/frameskip), int(self.nt/frameskip)), end="\r") if log else None
+                print("{}/{} images processed".format(int(t/frameskip), int(self.nt/frameskip)), end="\r") if self.log else None
                 field = Simulation.str2list(field, type=float)
                 particles = Simulation.str2list(particles, type=int)
                 if t%frameskip == 0:
@@ -212,9 +223,9 @@ class PostProcess:
                 os.remove(videopath)
                 return_path = videopath_compressed
             except:
-                print("WARNING: could not compress the video due to 'ffmpeg' error...") if log else None
+                print("WARNING: could not compress the video due to 'ffmpeg' error...") if self.log else None
 
-        print("video created successfully!") if log else None
+        print("video created successfully!") if self.log else None
         return return_path
     
     @staticmethod
@@ -352,11 +363,11 @@ class PostProcess:
         fig.colorbar(im, ax=ax)
         plt.show()
 
-    def fourier(self, *windows, frameskip=1, path=os.path.dirname(os.path.abspath(__file__))):
+    def fourier(self, *windows, frameskip=1, spectrograph=True, path=os.path.dirname(os.path.abspath(__file__))) -> list[str]:
         ts = int(datetime.datetime.now().timestamp())
         self.fieldfile.seek(0, 0)
         self.particlesfile.seek(0, 0)
-
+        r = []
         transforms = dict()
         if len(windows) == 0: # if no window given, take the whole string
             windows = [(0.0, 1.0)]
@@ -368,6 +379,7 @@ class PostProcess:
             transforms[key]["mat"] = np.array([[0.0]*(b - a)])
             filename = "{}_{}{}.txt".format(ts, PostProcess.FOURIER_PREFIX, key)
             filepath = os.path.join(path, filename)
+            r.append(filepath)
             file = open(filepath, "w")
             transforms[key]["file"] = file
             copyinfos = self.infos.copy()
@@ -380,6 +392,7 @@ class PostProcess:
 
         print("processing FFT...") if self.log else None
         for line in self.fieldfile:
+            print("{}/{}".format(t, self.duration/self.dt), end="\r") if self.log else None
             if t >= 0: # the file has a one-line header (json format)
                 field = Simulation.str2list(line)
                 osf.update(field)
@@ -397,14 +410,21 @@ class PostProcess:
 
         time = np.linspace(0.0, self.duration, frames)
         
-        for key, tm in transforms.items(): # creating the spectrography
-            tm["file"].close()
-            f = tm["f"]
-            mat = tm["mat"]
-            ff, tt = np.meshgrid(f, time)
-            mat = np.delete(mat, 0, 0)
-            plt.pcolormesh(tt, ff, np.abs(mat), shading="gouraud")
-            plt.title(key)
-            plt.xlabel("Time [s]")
-            plt.ylabel("Frequency [Hz]")
-            plt.savefig(os.path.join(path, "{}-{}-{}.png".format(PostProcess.SPECTRO_PREFIX, key, ts)), dpi=1024)
+        if spectrograph:
+            print("creating spectrograph...") if self.log else None
+            for key, tm in transforms.items(): # creating the spectrography
+                tm["file"].close()
+                f = tm["f"]
+                mat = tm["mat"]
+                ff, tt = np.meshgrid(f, time)
+                mat = np.delete(mat, 0, 0)
+                plt.pcolormesh(tt, ff, np.abs(mat), shading="gouraud")
+                plt.title(key)
+                plt.xlabel("Time [s]")
+                plt.ylabel("Space frequency [rad/m]")
+                pathsave = os.path.join(path, "{}-{}-{}.png".format(PostProcess.SPECTRO_PREFIX, key, ts))
+                plt.savefig(pathsave, dpi=1024)
+                plt.close()
+                print("'{}' successfully created".format(pathsave))
+        
+        return r
