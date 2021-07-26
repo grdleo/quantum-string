@@ -103,9 +103,10 @@ class PhyString:
             :param beta: (see equation)
             :param gamma: (see equation)
         """
-        dbg = 2.0*beta - gamma
-        utp = (uxp+ uxm + u*dbg)/(1.0 + beta) - utm
+        dbg = 2.0*beta - gamma # compute the factor 2β-γ
+        utp = (uxp+ uxm + u*dbg)/(1.0 + beta) - utm # the value of the field at t+Δt
 
+        # check if excitator is absorber bc equations modified at the ends
         if self.edge_left.absorber:
             exabs = 0.0
             if type(self.edge_left) == ExcitatorSinAbsorber:
@@ -119,12 +120,12 @@ class PhyString:
         
         try:
             utp[0] = self.edge_left.condition(tstep + 1)
-        except TypeError:
+        except TypeError: # not an excitator
             pass
             
         try:
             utp[-1] = self.edge_right.condition(tstep + 1)
-        except TypeError: 
+        except TypeError: # not an excitator
             pass
 
         return utp
@@ -139,27 +140,6 @@ class PhyString:
 
         le = 0.5*(cin + ten + spr)
         return le
-    
-    def apply_edge(self, f: list[float], t: int) -> list[float]:
-        """
-            Apply the edge conditions to the string
-
-            :param f: the field to be conditioned
-            :param t: time step
-        """
-        u = np.copy(f)
-
-        try:
-            u[0] = self.edge_left.condition(t)
-        except TypeError:
-            pass
-            
-        try:
-            u[-1] = self.edge_right.condition(t)
-        except TypeError: 
-            pass
-
-        return u
 
     @staticmethod
     def shift_list_right(lst: list) -> list: # (corresponds to "-1" in equations)

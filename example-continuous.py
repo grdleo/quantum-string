@@ -26,15 +26,23 @@ duration = dt*time_steps
 
 examp = 0.05 # [m]
 expuls = 2*np.pi*50 # [rad/s]
-right = ExcitatorSin(dt, examp, expuls, 0.0)
-left = MirrorEdge()
+left = ExcitatorSinAbsorber(dt, examp, expuls)
+right = AbsorberEdge()
 ic0 = [0.0]*space_steps
 ic1 = [0.0]*space_steps
 
-pmass = 0.01 # [kg]
-pk = pmass*expuls**2
-p1 = Particle(int(space_steps*0.6), 0.0, pmass, pk, True, space_steps)
-ps = Particles(p1, space_steps=space_steps)
+xsteps = np.array([i for i in range(100, 500, 5)])
+mass_profile = lambda xstep: 0.001*xstep**0 # constant profile
+stiff_profile = lambda xstep: 1.0*xstep
+
+particles_list = []
+
+for m, k, x in zip(mass_profile(xsteps), stiff_profile(xsteps), xsteps):
+    particles_list.append(
+        Particle(x, 0.0, m, k, True, space_steps)
+    )
+
+ps = Particles(*particles_list, space_steps=space_steps)
 
 simu = Simulation(dt, time_steps, space_steps, length, density, tension, left, right, ic0, ic1, ps)
 
@@ -46,9 +54,4 @@ process = PostProcess(
     open(epath, "r")
 )
 
-#process.anim(mypath)
-
-fig, ax = plt.subplots(1, 2)
-process.plot_particles(ax=ax[0], show=False, label=str(p1))
-process.phasegraph_particles(ax=ax[1], show=False, label=str(p1))
-plt.show()
+process.anim(mypath, frameskip=1)

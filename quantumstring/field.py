@@ -107,6 +107,9 @@ class OneSpaceField:
 
     @staticmethod
     def fft(field: list[float], d: float, window=(0, -1), averages=1) -> tuple:
+        """
+            Computes the FFT of the given signal over a given window.
+        """
         if averages != 1:
             raise NotImplementedError("FFT averages not implemented yet")
         
@@ -120,21 +123,19 @@ class OneSpaceField:
         return fft, fftfreq
 
     @staticmethod
-    def retrieve_sines(self, fft: list, fftfreq: list, h=0.0001) -> dict:
+    def retrieve_sines(fft: list, fftfreq: list) -> dict:
         """
             Given a FFT, returns the caracteristics of the main sines (peaks) of the signal.
             Returns a dictionary: { "frequency", "amplitude", "phase" }
         """
-        n = fftfreq.shape[-1]
-        trunc_n = 0.5*n
-        trunc_n += 1 if n % 2 != 0 else 0
-        pos_fft = fft[trunc_n:n]
-        pos_fftfreq = fftfreq[trunc_n:n]
-        pos_spectrum = 2*np.abs(fft/n)[trunc_n:n]
-        idx_peaks, _ = scipy.signal.find_peaks(pos_spectrum, height=h)
-        freq_peaks = pos_fftfreq[idx_peaks]
-        amp_peaks = pos_spectrum[idx_peaks]
-        phase_peaks = np.angle(pos_fft)[idx_peaks]
+        n = fftfreq.size
+        pos_fft = fft[fftfreq >= 0]
+        pos_fftfreq = fftfreq[fftfreq >= 0]
+        pos_spectrum = 2*np.abs(pos_fft/n)
+        idx_peak = np.argmax(pos_spectrum)
+        freq_peaks = pos_fftfreq[idx_peak]
+        amp_peaks = pos_spectrum[idx_peak]
+        phase_peaks = np.angle(pos_fft)[idx_peak]
         return {
             "frequency": freq_peaks,
             "amplitude": amp_peaks,

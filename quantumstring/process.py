@@ -76,6 +76,9 @@ class PostProcess:
         plt.show()
     
     def plot_particles(self, ax=plt.axes(), show=True, label="") -> None:
+        """
+            Plots a graph of the vertical position of the field where the particles are versus the time.
+        """
         pp = self.particles_pos()
         tline = np.linspace(0, self.duration, self.nt)
         for pos, part in zip(pp.T, self.particles):
@@ -87,8 +90,26 @@ class PostProcess:
         ax.set_ylabel("z [m]")
         plt.show() if show else None
     
+    def phasegraph_particles(self, ax=plt.axes(), show=True, label="") -> None:
+        """
+            Plots a graph of the derivative of the vertical position of the field, versus the actual vertical position of the field.
+        """
+        pp = self.particles_pos()
+        for pos, part in zip(pp.T, self.particles):
+            dpos = np.gradient(pos, self.dt)
+            c = tuple(np.array(part[Particle.STR_COLOR])/255.0)
+            ax.plot(pos, dpos, marker=".", color=c)
+            ax.legend([label])
+        ax.set_title("Particles phase graph (simulation {})".format(self.date))
+        ax.set_xlabel("$z$ [m]")
+        ax.set_ylabel("$\\frac{\partial z}{\partial t}$ [m/s]")
+        plt.show() if show else None
+    
     @staticmethod
     def file2matrix(file: TextIOWrapper, type=float) -> np.ndarray:
+        """
+            Given a file generated using the `quantum-string` library, converts and returns the data as a 2D NumPy array
+        """
         file.seek(0, 0)
         r = []
         t = -1
@@ -100,7 +121,7 @@ class PostProcess:
         
     def particles_pos(self) -> np.ndarray:
         """
-            r[t,n] where r is the position of the particle, t the timestep considered, and n the index of the particle
+            Returns a 2D array r[t,n] where r is the position of the particle, t the timestep considered, and n the index of the particle
         """
         self.fieldfile.seek(0, 0)
         self.particlesfile.seek(0, 0)
@@ -143,14 +164,30 @@ class PostProcess:
         r = int(anim_params["mass_rad"])
         for pidx, part in zip(p, self.particles):
             center = (int(x[pidx]), int(y[pidx]))
-            cv2.circle(img, center, r, part[Particle.STR_COLOR], -1)
+            try:
+                cv2.circle(img, center, r, part[Particle.STR_COLOR], -1)
+            except IndexError:
+                pass
 
-        img[y[0], x[0]] = PostProcess.COLOR_GRAY
-        img[y[len(y)-1], x[len(x)-1]] = PostProcess.COLOR_GRAY
+        try:
+            img[y[0], x[0]] = PostProcess.COLOR_GRAY
+            img[y[len(y)-1], x[len(x)-1]] = PostProcess.COLOR_GRAY
+        except IndexError:
+            pass
         
         return img
 
     def anim(self, path: str, title=False, resolution=(720, 480), fps=60, frameskip=1, yscale=1.0, compress=True):
+        """
+            Creates a animation of the simulation, using `opencv`
+
+            :param path: path where to write the video
+            :param title: a title for the video. if `False`, automatic name
+            :param fps: frame per seconds for the generated video
+            :param frameskip: will compute 1 out of `frameskip` frames for the generated video
+            :param yscale: vertical scaling for field
+            :param compress: if `True`, will compress the video using `ffmeg`
+        """
         ts = int(datetime.datetime.now().timestamp())
         self.fieldfile.seek(0, 0)
         self.particlesfile.seek(0, 0)
@@ -190,11 +227,13 @@ class PostProcess:
         draw.multiline_text((2, 2), textinfos, font=font, fill=PostProcess.COLOR_GRAY)
         lineh = 12
         hcount = 0
-        for p in self.particles:
+        for p, count in zip(self.particles, range(0, len(self.particles))):
             textparticle = "m={:.1f}g, ω={:.1f}rad/s".format(p[Particle.STR_MASS]*1e3, p[Particle.STR_PULSATION])
             c = tuple(p[Particle.STR_COLOR])
             draw.text((lx - 200, 2 + hcount), textparticle, font=font, fill=c)
             hcount += lineh
+            if count > 4:
+                break
         baseimg = np.array(img_pil)
 
         video = cv2.VideoWriter(videopath, cv2.VideoWriter_fourcc(*'mp4v'), fps, (lx, ly))
@@ -233,7 +272,7 @@ class PostProcess:
         """
             Given a matrix (an×m) or (n×am), returns a matrix (n×m) where the cells are the means of the cells surroundings
 
-            ex: 
+            ```
             >>> mat = np.array([
                 [0, 1, 2, 3],
                 [4, 5, 6, 7],
@@ -245,14 +284,14 @@ class PostProcess:
                 [0+4, 1+5, 2+6, 3+7],
                 [8+12, 9+13, 10+14, 11+15]
             ])/2
-            >>> matt = PostProcess.reduce_axis(mat, 2, axis=1)
-            >>> matt
+            >>> PostProcess.reduce_axis(mat, 2, axis=1)
             >>> np.array([
                 [0+1, 2+3],
                 [4+5, 6+7],
                 [8+9, 10+11],
                 [12+13, 14+15]
             ])/2
+            ```
         """
         complementary = 1 if axis == 0 else 0
         s = mat.shape[complementary]

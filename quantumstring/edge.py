@@ -113,8 +113,15 @@ class ExcitatorSin(ExcitatorEdge):
 class ExcitatorSinAbsorber(ExcitatorSin):
     def __init__(self, dt: float, amplitude: float, pulsation: float):
         """
+            Creates a sinusoidal excitator that absorbses reflected waves
+
+            !!! WARNING !!!
             !!! because of calculations for absorbing, the 'effective' sine that is propagating has his amplitude HALVED...
             !!! so that what user is entering is consistent, we double the amplitude the user is entering...
+
+            :param dt: Δt of the simulation [s]
+            :param amplitude: amplitude of the sine [m]
+            :param pulsation: pulsation of the sine [rad/s]
         """
         super().__init__(dt, 2.0*amplitude, pulsation, 0.0, absorber=True)
         self.infostring = "sin[A={:.3f}m, ω={:.1f}rad/s] & absorber".format(amplitude, pulsation)

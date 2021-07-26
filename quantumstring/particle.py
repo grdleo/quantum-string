@@ -22,7 +22,9 @@ class Particle:
     mass: float
     """ Mass *m* of the particle [kg] """
     pulsation: float
-    """ Pulsation *ω* of the particle [rad/s] (relation with the spring stifness *K=mω²*) """
+    """ Equivalent pulsation *ω* of the particle [rad/s] (relation with the spring stifness *K=mω²*) """
+    stiffness: float
+    """ Stiffness *k* of the spring attached to the particle [N/m] [kg/s²] """
     space_steps: int
     """ Number of cells (discretisation) that composes the string """
     fixed: bool
@@ -47,7 +49,7 @@ class Particle:
         """
         self.mass = mass
         self.stiffness = stiffness
-        self.pulsation = np.sqrt(stiffness/mass)
+        self.pulsation = np.inf if mass == 0.0 else np.sqrt(stiffness/mass)
         self.space_steps = space_steps
         self.fixed = fixed
         self._firstpos = pos

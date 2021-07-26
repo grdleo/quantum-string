@@ -10,6 +10,7 @@ from quantumstring.edge import Edge, MirrorEdge, LoopEdge
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import signal 
 from PIL import Image, ImageDraw
 import cv2
 import ffmpeg
@@ -177,9 +178,10 @@ class Simulation:
         """
             Converts a list to a string in a simple format for our use
 
-            ex: 
+            ```
             >>> list2str([1, 2, 3])
             '1,2,3'
+            ```
         """
         return str(list(l)).replace("[", "").replace("]", "").replace(" ", "").replace("\n", "")
     
@@ -188,9 +190,10 @@ class Simulation:
         """
             Converts a converted string back into a NumPy array. The type of values can be specified
 
-            ex:
+            ```
             >>> str2list("1,2,3")
             [1, 2, 3]
+            ```
         """
         s = s.replace("\n", "")
         l = s.split(",")
@@ -241,3 +244,16 @@ class RingString(Simulation):
     def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, ic0: list[float], ic1: list[float], particles: Particles, log=True, memory_field=5):
         ll, lr = LoopEdge(), LoopEdge()
         super().__init__(dt, time_steps, space_steps, string_len, string_density, string_tension, ll, lr, ic0, ic1, particles, log=log, memory_field=memory_field)
+
+class PulseRingString(RingString):
+    """
+        Abstraction of RingString: a ring string with a gaussian pulse traveling to the right
+    """
+    def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, amplitude: float, bandwidth: float, wavelength: float, particles: Particles, log=True, memory_field=5):
+        x = np.linspace(0.0, string_len, space_steps) - bandwidth
+        gauss = signal.gausspulse(x, fc=0.5/wavelength, bw=bandwidth)
+        ic0 = list(amplitude*gauss)
+        ic1 = ic0.copy()
+        ic1.insert(0, 0.0)
+        ic1.pop(-1)
+        super().__init__(dt, time_steps, space_steps, string_len, string_density, string_tension, np.array(ic0), np.array(ic1), particles, log=log, memory_field=memory_field)

@@ -1,5 +1,6 @@
 from datetime import time
 import os
+from quantumstring.field import OneSpaceField
 
 from quantumstring.simulation import CenterFixed, FreeString, RingString, Simulation, Cavity
 from quantumstring.edge import ExcitatorSinAbsorber, MirrorEdge, ExcitatorSin, AbsorberEdge
@@ -25,52 +26,90 @@ dt = dx/c
 time_steps = int(duration/dt)
 duration = dt*time_steps
 
-pmass = 0.0001 # [kg]
-pstiff = 1000.0 # [N/m]
-p = [
-        Particle(int(space_steps*0.5), 0.0, pmass, pstiff, True, space_steps)
-]
-ps = Particles(*p, space_steps=space_steps)
-
 examp = 0.05 # [m]
 exfreq = 50.0 # [Hz]
 expuls = 2*np.pi*exfreq # [rad/s]
+exk = expuls/c
+exwavelen = 2*np.pi/exk
+excitator = lambda x, t: examp*np.sin(exk*x - expuls*t)
 left = ExcitatorSinAbsorber(dt, examp, expuls)
 right = AbsorberEdge()
 
-ic0 = [0.0]*space_steps
-ic1 = [0.0]*space_steps
+pmass = 0.001 # [kg]
+stiffnesses = np.array([1000.0, 900.0, 800.0, 700.0, 600.0, 500.0, 400.0, 300.0, 200.0, 100.0])
+transmissions = []
+alpha = 2*expuls*density*c/(stiffnesses - pmass*expuls**2)
+transmissions_theory = 1/(1 + 1/alpha**2)
 
-simu = Simulation(dt, time_steps, space_steps, length, density, tension, left, right, ic0, ic1, ps)
+for stiff in stiffnesses:
+    p = [
+            Particle(int(space_steps*0.5), 0.0, pmass, stiff, True, space_steps)
+    ]
+    ps = Particles(*p, space_steps=space_steps)
 
-fpath, ppath, epath = simu.run(mypath)
+    ic0 = [0.0]*space_steps
+    ic1 = [0.0]*space_steps
 
-process = PostProcess(
-    open(fpath, "r"),
-    open(ppath, "r"),
-    open(epath, "r"),
-    log=True
-)
+    simu = Simulation(dt, time_steps, space_steps, length, density, tension, left, right, ic0, ic1, ps)
 
-space_freq = 2*np.pi*exfreq/c
-alpha = 2*space_freq*tension/(pstiff - pmass*expuls**2)
-mod_t_sqr_theory = 1/(1 + 1/alpha**2)
+    fpath, ppath, epath = simu.run(mypath)
 
-fourier_paths = process.fourier((0.52, 0.98), frameskip=5, path=mypath, spectrograph=False)
+    process = PostProcess(
+        open(fpath, "r"),
+        open(ppath, "r"),
+        open(epath, "r"),
+        log=True
+    )
 
-fourier_path = fourier_paths[0]
-mat = PostProcess.file2matrix(open(fourier_path, "r"), type=np.complex)
-t_fft, f_fft = mat.shape
-fft_freq = fft.fftfreq(f_fft, d=dx)
-fft_time = np.linspace(0.0, t_fft*dt, t_fft)
-amp = np.abs(mat)
-phase = np.arctan(mat.imag/mat.real)
-idxfreq = np.argmin(np.abs(fft_freq - space_freq))
-amp_at_freq = amp[:, idxfreq]
-amp_at_freq_perm = amp_at_freq[int(t_fft*0.8):t_fft]
-mod_t_sim = max(amp_at_freq_perm)/examp
-mod_t_sqr_sim = mod_t_sim**2
+    ### PROCESSING TRANSMISSION ###
 
-plt.plot(fft_time, amp_at_freq)
+    ### PHASE
+    last_ts = simu.s.field.current_time_step()
+    last_field = simu.s.field.get_val_time(last_ts)
+    last_time = last_ts*dt
+    xlin = np.linspace(0.0, length, space_steps)
+    field_from_excitator = excitator(xlin, last_time)
+    wavelen_steps_approx = int(1.25*exwavelen/dx)
 
-print("|t|²\n    ={} (theory)\n    ={} (simulation)".format(mod_t_sqr_theory, mod_t_sqr_sim))
+    win_end_a, win_end_b = space_steps - 2*wavelen_steps_approx, space_steps - wavelen_steps_approx
+    field_near_end_sim = last_field[win_end_a:win_end_b]
+    idx_node_sim = np.argmax(field_near_end_sim) + win_end_a
+
+    # -->
+    ex_field_right = field_from_excitator[idx_node_sim:idx_node_sim + wavelen_steps_approx]
+    idx_node_ex_right = np.argmax(ex_field_right)
+
+    # <--
+    ex_field_left = field_from_excitator[idx_node_sim - wavelen_steps_approx:idx_node_sim + 1]
+    idx_node_ex_left = np.argmax(np.flip(ex_field_left))
+
+    # get the space delay between the two sines
+    space_delay = min(idx_node_ex_right, idx_node_ex_left)
+
+    if idx_node_ex_right > idx_node_ex_left: # then the transmitted wave is LATE compared to excitator
+        space_delay *= -1
+
+    phase_t = 2*space_delay*np.pi*dx/exwavelen
+    phase_t %= np.pi
+
+    ### MODULE
+    after = last_field[int(space_steps*0.55):int(space_steps*0.95)]
+    max_after = max(after)
+    mod_t = max_after/examp
+    transmissions.append(mod_t**2)
+
+    ### THEORY ###
+
+    alpha = 2*exk*tension/(stiff - pmass*expuls**2)
+    t_heory = 1/np.complex(1, -1/alpha)
+
+    print("|t|²\n    ={} (theory)\n    ={} (simulation)".format(np.abs(t_heory)**2, mod_t**2))
+    print("arg(t)\n    ={} (theory)\n    ={} (simulation)".format(np.angle(t_heory), phase_t))
+
+"""
+plt.plot(stiffnesses, transmissions_theory, "r.", label="theory")
+plt.plot(stiffnesses, transmissions, "b+", label="simulation")
+plt.xlabel("spring stiffness [N/m]")
+plt.ylabel("|t|²")
+plt.show()
+"""
