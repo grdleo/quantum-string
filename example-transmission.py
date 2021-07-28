@@ -14,10 +14,10 @@ from scipy import fftpack as fft
 mypath = os.path.dirname(os.path.abspath(__file__))
 mypath = "C:\\Users\\leog\\Desktop\\lg2021stage\\output"
 
-duration = 1.0 # [s]
-space_steps = 511
+duration = 2.0 # [s]
+space_steps = 1023
 length = 6.0 # [m]
-tension = 10.0 # [N]
+tension = 5.0 # [N]
 density = 0.005 # [kg/m]
 
 c = np.sqrt(tension/density)
@@ -26,7 +26,7 @@ dt = dx/c
 time_steps = int(duration/dt)
 duration = dt*time_steps
 
-frequencies = np.array([i for i in range(20, 105, 5)]).astype(float) # excitator frequencies we use for the simulations
+frequencies = np.array([i for i in range(20, 100, 5)]).astype(float) # excitator frequencies we use for the simulations
 pulsations = 2*np.pi*frequencies
 
 # caracteristics for the mass
@@ -53,8 +53,8 @@ for omega in pulsations:
 
     p = Particle(int(space_steps*0.5), 0.0, pmass, pstiff, True, space_steps) # we create the particle
     ps = Particles(p, space_steps=space_steps) # and put it in the particles class
-    simu = Simulation(dt, time_steps, space_steps, length, density, tension, left, right, ic0, ic1, ps, log=False) # we create the simulation
-    simu.run(mypath) # ... and run it
+    simu = Simulation(dt, time_steps, space_steps, length, density, tension, left, right, ic0, ic1, ps, log=True) # we create the simulation
+    simu.run(mypath, file=False) # ... and run it
 
     last_ts = simu.s.field.current_time_step()
     last_field = simu.s.field.get_val_time(last_ts) # here we get the field at the very last time of simulation
@@ -82,7 +82,7 @@ for omega in pulsations:
     ### then: φ = acos(u(x)/A) - acos(v(x)/A)
     phase_list = np.arccos(right_field_ex/amp_ex) - np.arccos(right_field_sim/amp_sim)
     max_phase = max(phase_list)
-    phase_list = phase_list[max_phase*0.75 < phase_list] # will remove the undesired 'nan' and osef values
+    phase_list = phase_list[max_phase*0.5 < phase_list] # will remove the undesired 'nan' and osef values
     phase_t = np.mean(phase_list)
 
 
@@ -107,7 +107,7 @@ mod_sqr_spectrum = t_spectrum*t_spectrum.conjugate()
 angle_spectrum = np.angle(t_spectrum) 
 
 nb_pts = len(t_theory_list)
-cmap = plt.cm.get_cmap("hsv", nb_pts)
+cmap = plt.cm.get_cmap("plasma", nb_pts)
 
 ### PLOT DESIGN:
 ### we make the layout for the graphs
@@ -122,14 +122,17 @@ ax_cplx.set_ylim((-0.55, 0.55))
 ax_cplx.set_title("Complex transmission coefficient $t$, function of excitator frequency")
 ax_cplx.set_xlabel("$Re \; t$")
 ax_cplx.set_ylabel("$Im \; t$")
+ax_cplx.grid()
 
 ax_mod.set_title("$|t|²$")
 ax_mod.set_xlabel("$\omega / \omega_0$")
 ax_mod.set_ylabel("$|t|²$")
+ax_mod.grid()
 
 ax_angle.set_title("$arg(t)$")
 ax_angle.set_xlabel("$\omega / \omega_0 $")
 ax_angle.set_ylabel("$arg(t)$")
+ax_angle.grid()
 
 # we plot the theoretical values
 ax_cplx.plot(t_spectrum.real, t_spectrum.imag, "k-")
@@ -143,6 +146,7 @@ for the, exp, count, omega in zip(t_theory_list, t_exp_list, range(0, nb_pts), p
     ax_cplx.plot([0.0, exp.real], [0.0, exp.imag], linestyle="solid", color=c, label=label)
     ax_cplx.legend()
     ax_cplx.plot([exp.real, the.real], [exp.imag, the.imag], linestyle="dotted", linewidth=0.5, color=c)
+    ax_cplx.plot(the.real, the.imag, ".", linewidth=0.5, color=c)
 
     ax_mod.plot(omega/pomega, np.abs(exp)**2, "x", color=c)
     ax_mod.plot(omega/pomega, np.abs(the)**2, ".", color=c, linewidth=1)

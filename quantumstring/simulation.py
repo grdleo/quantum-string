@@ -10,7 +10,6 @@ from quantumstring.edge import Edge, MirrorEdge, LoopEdge
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import signal 
 from PIL import Image, ImageDraw
 import cv2
 import ffmpeg
@@ -99,12 +98,13 @@ class Simulation:
             self.s.particles,
             int(self.size_estimation_mb()))
 
-    def run(self, path: str) -> tuple[str, str]:
+    def run(self, path: str, file=True) -> tuple[str, str]:
         """
             Runs the simulation with options to save it as a animation and/or in a file
             Returns the path of the field, particles and energy file generated
 
             :param path: location where to save the outputs
+            :param file: if `True`, saves the simulation to files
         """
         dtnow = datetime.datetime.now()
         timestamp = int(dtnow.timestamp())
@@ -116,13 +116,15 @@ class Simulation:
         energy_field_path = os.path.join(path, "QuantumString-energy_{}.txt".format(timestamp))
 
         begtxt = "{}\n".format(jsoninfos)
-        ff = open(field_file_path, "w", encoding="utf-8")
-        pf = open(particles_file_path, "w", encoding="utf-8")
-        ef = open(energy_field_path, "w", encoding="utf-8")
 
-        ff.write(begtxt)
-        pf.write(begtxt)
-        ef.write(begtxt)
+        if file:
+            ff = open(field_file_path, "w", encoding="utf-8")
+            pf = open(particles_file_path, "w", encoding="utf-8")
+            ef = open(energy_field_path, "w", encoding="utf-8")
+
+            ff.write(begtxt)
+            pf.write(begtxt)
+            ef.write(begtxt)
 
         ts = datetime.datetime.now()
         percent = 0
@@ -150,19 +152,21 @@ class Simulation:
             f = self.s.field.get_val_time(t)
             pp = self.s.particles.list_pos(tstep=t)
             e = self.s.energy.get_val_time(t)
+            
+            if file:
+                fstr = Simulation.list2str(f)
+                pstr = Simulation.list2str(pp)
+                estr = Simulation.list2str(e)
 
-            fstr = Simulation.list2str(f)
-            pstr = Simulation.list2str(pp)
-            estr = Simulation.list2str(e)
-
-            ff.write("{}\n".format(fstr))
-            pf.write("{}\n".format(pstr))
-            ef.write("{}\n".format(estr))
+                ff.write("{}\n".format(fstr))
+                pf.write("{}\n".format(pstr))
+                ef.write("{}\n".format(estr))
         print("")
 
-        ff.close()
-        pf.close()
-        ef.close()
+        if file:
+            ff.close()
+            pf.close()
+            ef.close()
 
         return field_file_path, particles_file_path, energy_field_path
     
@@ -244,16 +248,3 @@ class RingString(Simulation):
     def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, ic0: list[float], ic1: list[float], particles: Particles, log=True, memory_field=5):
         ll, lr = LoopEdge(), LoopEdge()
         super().__init__(dt, time_steps, space_steps, string_len, string_density, string_tension, ll, lr, ic0, ic1, particles, log=log, memory_field=memory_field)
-
-class PulseRingString(RingString):
-    """
-        Abstraction of RingString: a ring string with a gaussian pulse traveling to the right
-    """
-    def __init__(self, dt: float, time_steps: int, space_steps: int, string_len: float, string_density: float, string_tension: float, amplitude: float, bandwidth: float, wavelength: float, particles: Particles, log=True, memory_field=5):
-        x = np.linspace(0.0, string_len, space_steps) - bandwidth
-        gauss = signal.gausspulse(x, fc=0.5/wavelength, bw=bandwidth)
-        ic0 = list(amplitude*gauss)
-        ic1 = ic0.copy()
-        ic1.insert(0, 0.0)
-        ic1.pop(-1)
-        super().__init__(dt, time_steps, space_steps, string_len, string_density, string_tension, np.array(ic0), np.array(ic1), particles, log=log, memory_field=memory_field)

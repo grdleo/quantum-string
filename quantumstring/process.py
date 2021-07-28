@@ -82,8 +82,8 @@ class PostProcess:
         pp = self.particles_pos()
         tline = np.linspace(0, self.duration, self.nt)
         for pos, part in zip(pp.T, self.particles):
-            c = tuple(np.array(part[Particle.STR_COLOR])/255.0)
-            ax.plot(tline, pos, color=c)
+            c = np.flip(np.array(part[Particle.STR_COLOR])/255.0)
+            ax.plot(tline, pos, color=tuple(c))
             ax.legend([label])
         ax.set_title("Particles vertical position (simulation {})".format(self.date))
         ax.set_xlabel("t [s]")
@@ -97,12 +97,32 @@ class PostProcess:
         pp = self.particles_pos()
         for pos, part in zip(pp.T, self.particles):
             dpos = np.gradient(pos, self.dt)
-            c = tuple(np.array(part[Particle.STR_COLOR])/255.0)
-            ax.plot(pos, dpos, marker=".", color=c)
+            c = np.flip(np.array(part[Particle.STR_COLOR])/255.0)
+            ax.plot(pos, dpos, marker=".", color=tuple(c))
             ax.legend([label])
         ax.set_title("Particles phase graph (simulation {})".format(self.date))
         ax.set_xlabel("$z$ [m]")
         ax.set_ylabel("$\\frac{\partial z}{\partial t}$ [m/s]")
+        plt.show() if show else None
+    
+    def plot_grad_particles(self, ax=plt.axes(), show=True, label="") -> None:
+        ax.set_title("Gradient at left (solid) and right (dashed) to the particles")
+        ax.set_xlabel("$t [s]$")
+        ax.set_ylabel("$\frac{\partial u}{\partial x}$")
+
+        tline = np.linspace(0.0, self.duration, self.nt)
+        for part in self.particles:
+            cell = part[Particle.STR_INIT_POS]
+            color = part[Particle.STR_COLOR]
+            l, r = cell - 1, cell + 1
+            vpart = self._get_cells(l, cell, r)
+
+            grad_left = (vpart[:,1] - vpart[:,0])/self.dx
+            grad_right = (vpart[:,2] - vpart[:,1])/self.dx
+
+            ax.plot(tline, grad_left, linestyle="solid", color=color)
+            ax.plot(tline, grad_right, linestyle="dashed", color=color)
+        
         plt.show() if show else None
     
     @staticmethod
@@ -118,6 +138,36 @@ class PostProcess:
                 r.append(Simulation.str2list(field, type=type)) if field != "\n" else None
             t += 1
         return np.array(r)
+    
+    def _get_cells(self, *cells: int) -> np.ndarray:
+        self.fieldfile.seek(0, 0)
+        r = []
+        t = -1
+        for field in self.fieldfile:
+            if t >= 0:
+                field = Simulation.str2list(field, type=float)
+                line = []
+                for c in cells:
+                    try:
+                        line.append(field[c])
+                    except: # probably end of file
+                        pass
+                r.append(line) if len(line) != 0 else None
+            t += 1
+        return np.array(r)
+    
+    def plot_cells(self, *cells: int, ax=plt.axes(), show=True) -> np.ndarray:
+        cells_vals = self._get_cells(*cells)
+        ax.set_title("Cells plotting (simulation {})".format(self.date))
+        ax.set_xlabel("t [s]")
+        ax.set_ylabel("u [m]")
+
+        tline = np.linspace(0.0, self.duration, self.nt)
+        for c, idx in zip(cells_vals.T, cells):
+            ax.plot(tline, c, label="x={}m".format(idx*self.dx))
+            ax.legend()
+        
+        plt.plot() if show else None
         
     def particles_pos(self) -> np.ndarray:
         """

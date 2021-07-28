@@ -12,7 +12,7 @@ import numpy as np
 mypath = os.path.dirname(os.path.abspath(__file__))
 mypath = "C:\\Users\\leog\\Desktop\\lg2021stage\\output"
 
-duration = 0.5 # [s]
+duration = 5.0 # [s]
 space_steps = 511
 length = 1.0 # [m]
 tension = 1.0 # [N]
@@ -47,14 +47,12 @@ p = [
 ]
 ps = Particles(*p, space_steps=space_steps)
 
-nb_white = 100
+nb_white = 5000
 white_freqs = np.array([i for i in range(0, nb_white)]).astype(float)
 a, b = 0, rel2xstep(0.6)
-ic0 = xline.copy()
-ic0[a:b] = white_excitator(xline[a:b], white_freqs)*0.05
+ic0 = xline*0.0
+ic0[a:b] = white_excitator(xline[a:b], white_freqs)
 ic1 = PhyString.shift_list_right(ic0)
-
-print(ic1)
 
 simu = Simulation(dt, time_steps, space_steps, length, density, tension, left, right, ic0, ic1, ps)
 fpath, ppath, epath = simu.run(mypath)
@@ -65,4 +63,4 @@ process = PostProcess(
     open(epath, "r")
 )
 
-process.anim(mypath, frameskip=1)
+process.anim(mypath, frameskip=5)

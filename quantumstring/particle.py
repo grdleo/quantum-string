@@ -18,6 +18,7 @@ class Particle:
     STR_PULSATION = "omega"
     STR_COLOR = "color"
     STR_STIFFNESS = "k"
+    STR_INIT_POS = "pos"
 
     mass: float
     """ Mass *m* of the particle [kg] """
@@ -77,7 +78,7 @@ class Particle:
         self.color = color
 
     def __repr__(self):
-        return "m={:.2f}kg, k={:.2f}kg/s², ω={:.2f}rad/s;".format(self.mass, self.stiffness, self.pulsation)
+        return "m={:.4f}kg, k={:.2f}kg/s², ω={:.2f}rad/s;".format(self.mass, self.stiffness, self.pulsation)
     
     def infos(self) -> dict:
         """
@@ -87,7 +88,8 @@ class Particle:
             Particle.STR_MASS: self.mass,
             Particle.STR_STIFFNESS: self.stiffness,
             Particle.STR_PULSATION: self.pulsation,
-            Particle.STR_COLOR: self.color
+            Particle.STR_COLOR: self.color,
+            Particle.STR_INIT_POS: self._firstpos
         }
     
     def update(self):
