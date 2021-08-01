@@ -1,0 +1,867 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>quantumstring.particle API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>quantumstring.particle</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from __future__ import annotations
+
+import random
+
+import numpy as np
+
+from quantumstring.field import OneSpaceField
+
+&#34;&#34;&#34;
+    Classes for dealing with particles on the string
+&#34;&#34;&#34;
+
+class Particle:
+    &#34;&#34;&#34;
+        A class to create a particle to be on the string
+    &#34;&#34;&#34;
+    STR_MASS = &#34;m&#34;
+    STR_PULSATION = &#34;omega&#34;
+    STR_COLOR = &#34;color&#34;
+    STR_STIFFNESS = &#34;k&#34;
+    STR_INIT_POS = &#34;pos&#34;
+
+    mass: float
+    &#34;&#34;&#34; Mass *m* of the particle [kg] &#34;&#34;&#34;
+    pulsation: float
+    &#34;&#34;&#34; Equivalent pulsation *ω* of the particle [rad/s] (relation with the spring stifness *K=mω²*) &#34;&#34;&#34;
+    stiffness: float
+    &#34;&#34;&#34; Stiffness *k* of the spring attached to the particle [N/m] [kg/s²] &#34;&#34;&#34;
+    space_steps: int
+    &#34;&#34;&#34; Number of cells (discretisation) that composes the string &#34;&#34;&#34;
+    fixed: bool
+    &#34;&#34;&#34; if True, the particle is fixed on the string &#34;&#34;&#34;
+
+    def __init__(self, pos: int, vel: float, mass: float, stiffness: float, fixed: bool, space_steps: int, color=(0, 0, 255)):
+        &#34;&#34;&#34;
+            Initalises a particle
+
+            :param pos: index of the cell to be for the particle
+            :param vel: initial (vertical) velocity of particle [m/s]
+            :param mass: mass of the particle [kg]
+            :param stiffness: stiffness of the spring [kg/s²]
+            :param fixed: is the particle fixed horizontally on the bench?
+            :param space_steps: number of cells in the string
+            :type pos: float
+            :type vel: float
+            :type mass: float
+            :type pulsation: float
+            :type fixed: bool
+            :type space_steps: int
+        &#34;&#34;&#34;
+        self.mass = mass
+        self.stiffness = stiffness
+        self.pulsation = np.inf if mass == 0.0 else np.sqrt(stiffness/mass)
+        self.space_steps = space_steps
+        self.fixed = fixed
+        self._firstpos = pos
+        pos_next = pos
+
+        if not 0 &lt;= pos &lt; space_steps:
+            raise ValueError(&#34;Cell position of particle {} is not on the string [0, {}]&#34;.format(pos, space_steps - 1))
+
+        if not fixed:
+            raise NotImplementedError(&#34;Moving particles not implemented yet! :(&#34;)
+        
+        init_val =np.vstack((pos, pos_next))
+        self.pos = OneSpaceField(init_val, memory=5)
+
+        if type(color) == tuple:
+            pass
+        elif type(color) == str:
+            color = color.lstrip(&#34;#&#34;)
+            try:
+                color = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
+            except:
+                raise ValueError(&#34;&#39;{}&#39; not a hexadecimal color!&#34;.format(color))
+        else:
+            raise ValueError(&#34;&#39;{}&#39; is not a valid color!&#34;.format(color))
+        self.color = color
+
+    def __repr__(self):
+        return &#34;m={:.4f}kg, k={:.2f}kg/s², ω={:.2f}rad/s;&#34;.format(self.mass, self.stiffness, self.pulsation)
+    
+    def infos(self) -&gt; dict:
+        &#34;&#34;&#34;
+            Returns a dictionary containing the informations about the mass and pulsation of the particle
+        &#34;&#34;&#34;
+        return {
+            Particle.STR_MASS: self.mass,
+            Particle.STR_STIFFNESS: self.stiffness,
+            Particle.STR_PULSATION: self.pulsation,
+            Particle.STR_COLOR: self.color,
+            Particle.STR_INIT_POS: self._firstpos
+        }
+    
+    def update(self):
+        &#34;&#34;&#34;
+            Updates the particle
+        &#34;&#34;&#34;
+        if self.fixed:
+            self.pos.update(self._firstpos)
+        else:
+            raise NotImplementedError()
+
+class Particles:
+    &#34;&#34;&#34;
+        A wrapper of a list of particles to be used for the string simulation
+    &#34;&#34;&#34;
+
+    particles: list[Particle]
+    &#34;&#34;&#34; Contains the Particle objects &#34;&#34;&#34;
+    space_steps: int
+    &#34;&#34;&#34; Number of cells (discretisation) that composes the string &#34;&#34;&#34;
+    free_particles: bool
+    &#34;&#34;&#34; if True, at least one Particle is not fixed on the string &#34;&#34;&#34;
+    empty: bool
+    &#34;&#34;&#34; if True, there is no Particle inside this object &#34;&#34;&#34;
+
+    def __init__(self, *particles: list[Particle], space_steps=0):
+        &#34;&#34;&#34;
+            Initialise the list of particles
+
+            :param space_steps: number of cells in the string
+            :param particles: all the particles considered in a list
+        &#34;&#34;&#34;
+        self.empty = True
+        self.space_steps = space_steps
+        self.particles_quantity = len(particles)
+        self.free_particles = False # if True, at least one particle is moving 
+        self.particles = []
+        if self.particles_quantity != 0:
+            self.space_steps = particles[0].space_steps
+            self.empty = False
+            self.particles = particles
+            for p in particles:
+                if not p.fixed:
+                    self.free_particles = True
+                if p.space_steps != self.space_steps:
+                    raise ValueError(&#34;Some particles are on different strings!&#34;)
+        else:
+            if space_steps == 0:
+                raise ValueError(&#34;No particles in the object: therefore &#39;space_steps&#39; has to be entered manually!&#34;)
+    
+    def infos(self) -&gt; list:
+        &#34;&#34;&#34;
+            Returns list containing the dictionaries of the informations about the mass and pulsation of the particles
+        &#34;&#34;&#34;
+        a = []
+        for p in self.particles:
+            a.append(p.infos())
+        return a
+    
+    def __repr__(self):
+        s = &#34;[PARTICLES]    ;&#34;
+        for (p, i) in zip(self.particles, range(0, self.particles_quantity)):
+            s += &#34;{}: {}&#34;.format(i, str(p))
+        return s
+    
+    def update(self):
+        &#34;&#34;&#34;
+            Updates all the particles
+        &#34;&#34;&#34;
+        if not self.empty:
+            for p in self.particles:
+                p.update()
+    
+    def list_pos(self, tstep=-1) -&gt; list[int]:
+        &#34;&#34;&#34;
+            Return a list where each entry corresponds to the index of the cell where a particle is, at the time step considered
+
+            :param tstep: the time step considered
+        &#34;&#34;&#34;
+        s = []
+        if not self.empty:
+            for p in self.particles:
+                s.append(int(p.pos.get_val_time(tstep)))
+        return np.array(s)
+    
+    def list_free(self, tstep=-1) -&gt; list[int]:
+        &#34;&#34;&#34;
+            Return a list where each entry corresponds to the index of the cell where a particle is NOT, at the time step considered (complementary of list_pos)
+
+            :param tstep: the time step considered
+            :type tstep: int
+
+            :return: list containing the position of all free cells
+            :rtype: list
+        &#34;&#34;&#34;
+        s = [i for i in range(0, self.space_steps)]
+        lp = self.list_pos(tstep=tstep)
+        if not self.empty:
+            for i in lp:
+                s = np.delete(s, i)
+        return np.array(s)
+    
+    def mass_density(self, tstep=-1, fixed=False) -&gt; list[float]:
+        &#34;&#34;&#34;
+            Return a list where each cell corresponds to a cell of the string. if cell == 0, no particle on this step. if cell &gt;= 1, corresponds to the total mass at that cell
+            
+            :param tstep: the time step considered
+            :param fixed: if True, will return only the masses that are fixed on the string
+        &#34;&#34;&#34;
+        s = [0.0]*self.space_steps
+        if not self.empty:
+            for p in self.particles:
+                pos = int(p.pos.get_val_time(tstep)) # get the position of each particle
+                s[pos] += 0.0 if fixed and not p.fixed else p.mass # increment the vector where the particle is
+        return np.array(s)
+
+    def spring_density(self, tstep=-1, fixed=False) -&gt; list[float]:
+        &#34;&#34;&#34;
+            Return a list where each cell corresponds to a cell of the string. if cell == 0, no particle on this step. if cell &gt; 0, the value corresponds to the spring stiffness attached to this cell
+            
+            :param tstep: the time step considered
+            :param fixed: if True, will return only the masses that are fixed on the string
+        &#34;&#34;&#34;
+        s = [0.0]*self.space_steps
+        if not self.empty:
+            for p in self.particles:
+                pos = int(p.pos.get_val_time(tstep)) # get the position of each particle
+                s[pos] += 0.0 if fixed and not p.fixed else p.stiffness # increment the vector where the particle is
+        return np.array(s)
+
+    def mass_presence(self, tstep=-1, fixed=False) -&gt; list[bool]:
+        &#34;&#34;&#34;
+            Return a list where each cell corresponds to a cell of the string. if cell == False, no particle on this step. if cell == True, at least 1 particle is present on this cell
+            
+            :param tstep: the time step considered
+            :param fixed: if True, will return only the masses that are fixed on the string
+        &#34;&#34;&#34;
+        s = np.array([False]*self.space_steps)
+        md = self.mass_density(tstep=tstep, fixed=fixed)
+        s[md != 0] = True
+        return np.array(s)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="quantumstring.particle.Particle"><code class="flex name class">
+<span>class <span class="ident">Particle</span></span>
+<span>(</span><span>pos: int, vel: float, mass: float, stiffness: float, fixed: bool, space_steps: int, color=(0, 0, 255))</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A class to create a particle to be on the string</p>
+<p>Initalises a particle</p>
+<p>:param pos: index of the cell to be for the particle
+:param vel: initial (vertical) velocity of particle [m/s]
+:param mass: mass of the particle [kg]
+:param stiffness: stiffness of the spring [kg/s²]
+:param fixed: is the particle fixed horizontally on the bench?
+:param space_steps: number of cells in the string
+:type pos: float
+:type vel: float
+:type mass: float
+:type pulsation: float
+:type fixed: bool
+:type space_steps: int</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Particle:
+    &#34;&#34;&#34;
+        A class to create a particle to be on the string
+    &#34;&#34;&#34;
+    STR_MASS = &#34;m&#34;
+    STR_PULSATION = &#34;omega&#34;
+    STR_COLOR = &#34;color&#34;
+    STR_STIFFNESS = &#34;k&#34;
+    STR_INIT_POS = &#34;pos&#34;
+
+    mass: float
+    &#34;&#34;&#34; Mass *m* of the particle [kg] &#34;&#34;&#34;
+    pulsation: float
+    &#34;&#34;&#34; Equivalent pulsation *ω* of the particle [rad/s] (relation with the spring stifness *K=mω²*) &#34;&#34;&#34;
+    stiffness: float
+    &#34;&#34;&#34; Stiffness *k* of the spring attached to the particle [N/m] [kg/s²] &#34;&#34;&#34;
+    space_steps: int
+    &#34;&#34;&#34; Number of cells (discretisation) that composes the string &#34;&#34;&#34;
+    fixed: bool
+    &#34;&#34;&#34; if True, the particle is fixed on the string &#34;&#34;&#34;
+
+    def __init__(self, pos: int, vel: float, mass: float, stiffness: float, fixed: bool, space_steps: int, color=(0, 0, 255)):
+        &#34;&#34;&#34;
+            Initalises a particle
+
+            :param pos: index of the cell to be for the particle
+            :param vel: initial (vertical) velocity of particle [m/s]
+            :param mass: mass of the particle [kg]
+            :param stiffness: stiffness of the spring [kg/s²]
+            :param fixed: is the particle fixed horizontally on the bench?
+            :param space_steps: number of cells in the string
+            :type pos: float
+            :type vel: float
+            :type mass: float
+            :type pulsation: float
+            :type fixed: bool
+            :type space_steps: int
+        &#34;&#34;&#34;
+        self.mass = mass
+        self.stiffness = stiffness
+        self.pulsation = np.inf if mass == 0.0 else np.sqrt(stiffness/mass)
+        self.space_steps = space_steps
+        self.fixed = fixed
+        self._firstpos = pos
+        pos_next = pos
+
+        if not 0 &lt;= pos &lt; space_steps:
+            raise ValueError(&#34;Cell position of particle {} is not on the string [0, {}]&#34;.format(pos, space_steps - 1))
+
+        if not fixed:
+            raise NotImplementedError(&#34;Moving particles not implemented yet! :(&#34;)
+        
+        init_val =np.vstack((pos, pos_next))
+        self.pos = OneSpaceField(init_val, memory=5)
+
+        if type(color) == tuple:
+            pass
+        elif type(color) == str:
+            color = color.lstrip(&#34;#&#34;)
+            try:
+                color = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
+            except:
+                raise ValueError(&#34;&#39;{}&#39; not a hexadecimal color!&#34;.format(color))
+        else:
+            raise ValueError(&#34;&#39;{}&#39; is not a valid color!&#34;.format(color))
+        self.color = color
+
+    def __repr__(self):
+        return &#34;m={:.4f}kg, k={:.2f}kg/s², ω={:.2f}rad/s;&#34;.format(self.mass, self.stiffness, self.pulsation)
+    
+    def infos(self) -&gt; dict:
+        &#34;&#34;&#34;
+            Returns a dictionary containing the informations about the mass and pulsation of the particle
+        &#34;&#34;&#34;
+        return {
+            Particle.STR_MASS: self.mass,
+            Particle.STR_STIFFNESS: self.stiffness,
+            Particle.STR_PULSATION: self.pulsation,
+            Particle.STR_COLOR: self.color,
+            Particle.STR_INIT_POS: self._firstpos
+        }
+    
+    def update(self):
+        &#34;&#34;&#34;
+            Updates the particle
+        &#34;&#34;&#34;
+        if self.fixed:
+            self.pos.update(self._firstpos)
+        else:
+            raise NotImplementedError()</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="quantumstring.particle.Particle.STR_COLOR"><code class="name">var <span class="ident">STR_COLOR</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="quantumstring.particle.Particle.STR_INIT_POS"><code class="name">var <span class="ident">STR_INIT_POS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="quantumstring.particle.Particle.STR_MASS"><code class="name">var <span class="ident">STR_MASS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="quantumstring.particle.Particle.STR_PULSATION"><code class="name">var <span class="ident">STR_PULSATION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="quantumstring.particle.Particle.STR_STIFFNESS"><code class="name">var <span class="ident">STR_STIFFNESS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="quantumstring.particle.Particle.fixed"><code class="name">var <span class="ident">fixed</span> : bool</code></dt>
+<dd>
+<div class="desc"><p>if True, the particle is fixed on the string</p></div>
+</dd>
+<dt id="quantumstring.particle.Particle.mass"><code class="name">var <span class="ident">mass</span> : float</code></dt>
+<dd>
+<div class="desc"><p>Mass <em>m</em> of the particle [kg]</p></div>
+</dd>
+<dt id="quantumstring.particle.Particle.pulsation"><code class="name">var <span class="ident">pulsation</span> : float</code></dt>
+<dd>
+<div class="desc"><p>Equivalent pulsation <em>ω</em> of the particle [rad/s] (relation with the spring stifness <em>K=mω²</em>)</p></div>
+</dd>
+<dt id="quantumstring.particle.Particle.space_steps"><code class="name">var <span class="ident">space_steps</span> : int</code></dt>
+<dd>
+<div class="desc"><p>Number of cells (discretisation) that composes the string</p></div>
+</dd>
+<dt id="quantumstring.particle.Particle.stiffness"><code class="name">var <span class="ident">stiffness</span> : float</code></dt>
+<dd>
+<div class="desc"><p>Stiffness <em>k</em> of the spring attached to the particle [N/m] [kg/s²]</p></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="quantumstring.particle.Particle.infos"><code class="name flex">
+<span>def <span class="ident">infos</span></span>(<span>self) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a dictionary containing the informations about the mass and pulsation of the particle</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def infos(self) -&gt; dict:
+    &#34;&#34;&#34;
+        Returns a dictionary containing the informations about the mass and pulsation of the particle
+    &#34;&#34;&#34;
+    return {
+        Particle.STR_MASS: self.mass,
+        Particle.STR_STIFFNESS: self.stiffness,
+        Particle.STR_PULSATION: self.pulsation,
+        Particle.STR_COLOR: self.color,
+        Particle.STR_INIT_POS: self._firstpos
+    }</code></pre>
+</details>
+</dd>
+<dt id="quantumstring.particle.Particle.update"><code class="name flex">
+<span>def <span class="ident">update</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Updates the particle</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update(self):
+    &#34;&#34;&#34;
+        Updates the particle
+    &#34;&#34;&#34;
+    if self.fixed:
+        self.pos.update(self._firstpos)
+    else:
+        raise NotImplementedError()</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="quantumstring.particle.Particles"><code class="flex name class">
+<span>class <span class="ident">Particles</span></span>
+<span>(</span><span>*particles: list[<a title="quantumstring.particle.Particle" href="#quantumstring.particle.Particle">Particle</a>], space_steps=0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A wrapper of a list of particles to be used for the string simulation</p>
+<p>Initialise the list of particles</p>
+<p>:param space_steps: number of cells in the string
+:param particles: all the particles considered in a list</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Particles:
+    &#34;&#34;&#34;
+        A wrapper of a list of particles to be used for the string simulation
+    &#34;&#34;&#34;
+
+    particles: list[Particle]
+    &#34;&#34;&#34; Contains the Particle objects &#34;&#34;&#34;
+    space_steps: int
+    &#34;&#34;&#34; Number of cells (discretisation) that composes the string &#34;&#34;&#34;
+    free_particles: bool
+    &#34;&#34;&#34; if True, at least one Particle is not fixed on the string &#34;&#34;&#34;
+    empty: bool
+    &#34;&#34;&#34; if True, there is no Particle inside this object &#34;&#34;&#34;
+
+    def __init__(self, *particles: list[Particle], space_steps=0):
+        &#34;&#34;&#34;
+            Initialise the list of particles
+
+            :param space_steps: number of cells in the string
+            :param particles: all the particles considered in a list
+        &#34;&#34;&#34;
+        self.empty = True
+        self.space_steps = space_steps
+        self.particles_quantity = len(particles)
+        self.free_particles = False # if True, at least one particle is moving 
+        self.particles = []
+        if self.particles_quantity != 0:
+            self.space_steps = particles[0].space_steps
+            self.empty = False
+            self.particles = particles
+            for p in particles:
+                if not p.fixed:
+                    self.free_particles = True
+                if p.space_steps != self.space_steps:
+                    raise ValueError(&#34;Some particles are on different strings!&#34;)
+        else:
+            if space_steps == 0:
+                raise ValueError(&#34;No particles in the object: therefore &#39;space_steps&#39; has to be entered manually!&#34;)
+    
+    def infos(self) -&gt; list:
+        &#34;&#34;&#34;
+            Returns list containing the dictionaries of the informations about the mass and pulsation of the particles
+        &#34;&#34;&#34;
+        a = []
+        for p in self.particles:
+            a.append(p.infos())
+        return a
+    
+    def __repr__(self):
+        s = &#34;[PARTICLES]    ;&#34;
+        for (p, i) in zip(self.particles, range(0, self.particles_quantity)):
+            s += &#34;{}: {}&#34;.format(i, str(p))
+        return s
+    
+    def update(self):
+        &#34;&#34;&#34;
+            Updates all the particles
+        &#34;&#34;&#34;
+        if not self.empty:
+            for p in self.particles:
+                p.update()
+    
+    def list_pos(self, tstep=-1) -&gt; list[int]:
+        &#34;&#34;&#34;
+            Return a list where each entry corresponds to the index of the cell where a particle is, at the time step considered
+
+            :param tstep: the time step considered
+        &#34;&#34;&#34;
+        s = []
+        if not self.empty:
+            for p in self.particles:
+                s.append(int(p.pos.get_val_time(tstep)))
+        return np.array(s)
+    
+    def list_free(self, tstep=-1) -&gt; list[int]:
+        &#34;&#34;&#34;
+            Return a list where each entry corresponds to the index of the cell where a particle is NOT, at the time step considered (complementary of list_pos)
+
+            :param tstep: the time step considered
+            :type tstep: int
+
+            :return: list containing the position of all free cells
+            :rtype: list
+        &#34;&#34;&#34;
+        s = [i for i in range(0, self.space_steps)]
+        lp = self.list_pos(tstep=tstep)
+        if not self.empty:
+            for i in lp:
+                s = np.delete(s, i)
+        return np.array(s)
+    
+    def mass_density(self, tstep=-1, fixed=False) -&gt; list[float]:
+        &#34;&#34;&#34;
+            Return a list where each cell corresponds to a cell of the string. if cell == 0, no particle on this step. if cell &gt;= 1, corresponds to the total mass at that cell
+            
+            :param tstep: the time step considered
+            :param fixed: if True, will return only the masses that are fixed on the string
+        &#34;&#34;&#34;
+        s = [0.0]*self.space_steps
+        if not self.empty:
+            for p in self.particles:
+                pos = int(p.pos.get_val_time(tstep)) # get the position of each particle
+                s[pos] += 0.0 if fixed and not p.fixed else p.mass # increment the vector where the particle is
+        return np.array(s)
+
+    def spring_density(self, tstep=-1, fixed=False) -&gt; list[float]:
+        &#34;&#34;&#34;
+            Return a list where each cell corresponds to a cell of the string. if cell == 0, no particle on this step. if cell &gt; 0, the value corresponds to the spring stiffness attached to this cell
+            
+            :param tstep: the time step considered
+            :param fixed: if True, will return only the masses that are fixed on the string
+        &#34;&#34;&#34;
+        s = [0.0]*self.space_steps
+        if not self.empty:
+            for p in self.particles:
+                pos = int(p.pos.get_val_time(tstep)) # get the position of each particle
+                s[pos] += 0.0 if fixed and not p.fixed else p.stiffness # increment the vector where the particle is
+        return np.array(s)
+
+    def mass_presence(self, tstep=-1, fixed=False) -&gt; list[bool]:
+        &#34;&#34;&#34;
+            Return a list where each cell corresponds to a cell of the string. if cell == False, no particle on this step. if cell == True, at least 1 particle is present on this cell
+            
+            :param tstep: the time step considered
+            :param fixed: if True, will return only the masses that are fixed on the string
+        &#34;&#34;&#34;
+        s = np.array([False]*self.space_steps)
+        md = self.mass_density(tstep=tstep, fixed=fixed)
+        s[md != 0] = True
+        return np.array(s)</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="quantumstring.particle.Particles.empty"><code class="name">var <span class="ident">empty</span> : bool</code></dt>
+<dd>
+<div class="desc"><p>if True, there is no Particle inside this object</p></div>
+</dd>
+<dt id="quantumstring.particle.Particles.free_particles"><code class="name">var <span class="ident">free_particles</span> : bool</code></dt>
+<dd>
+<div class="desc"><p>if True, at least one Particle is not fixed on the string</p></div>
+</dd>
+<dt id="quantumstring.particle.Particles.particles"><code class="name">var <span class="ident">particles</span> : list</code></dt>
+<dd>
+<div class="desc"><p>Contains the Particle objects</p></div>
+</dd>
+<dt id="quantumstring.particle.Particles.space_steps"><code class="name">var <span class="ident">space_steps</span> : int</code></dt>
+<dd>
+<div class="desc"><p>Number of cells (discretisation) that composes the string</p></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="quantumstring.particle.Particles.infos"><code class="name flex">
+<span>def <span class="ident">infos</span></span>(<span>self) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns list containing the dictionaries of the informations about the mass and pulsation of the particles</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def infos(self) -&gt; list:
+    &#34;&#34;&#34;
+        Returns list containing the dictionaries of the informations about the mass and pulsation of the particles
+    &#34;&#34;&#34;
+    a = []
+    for p in self.particles:
+        a.append(p.infos())
+    return a</code></pre>
+</details>
+</dd>
+<dt id="quantumstring.particle.Particles.list_free"><code class="name flex">
+<span>def <span class="ident">list_free</span></span>(<span>self, tstep=-1) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a list where each entry corresponds to the index of the cell where a particle is NOT, at the time step considered (complementary of list_pos)</p>
+<p>:param tstep: the time step considered
+:type tstep: int</p>
+<p>:return: list containing the position of all free cells
+:rtype: list</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def list_free(self, tstep=-1) -&gt; list[int]:
+    &#34;&#34;&#34;
+        Return a list where each entry corresponds to the index of the cell where a particle is NOT, at the time step considered (complementary of list_pos)
+
+        :param tstep: the time step considered
+        :type tstep: int
+
+        :return: list containing the position of all free cells
+        :rtype: list
+    &#34;&#34;&#34;
+    s = [i for i in range(0, self.space_steps)]
+    lp = self.list_pos(tstep=tstep)
+    if not self.empty:
+        for i in lp:
+            s = np.delete(s, i)
+    return np.array(s)</code></pre>
+</details>
+</dd>
+<dt id="quantumstring.particle.Particles.list_pos"><code class="name flex">
+<span>def <span class="ident">list_pos</span></span>(<span>self, tstep=-1) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a list where each entry corresponds to the index of the cell where a particle is, at the time step considered</p>
+<p>:param tstep: the time step considered</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def list_pos(self, tstep=-1) -&gt; list[int]:
+    &#34;&#34;&#34;
+        Return a list where each entry corresponds to the index of the cell where a particle is, at the time step considered
+
+        :param tstep: the time step considered
+    &#34;&#34;&#34;
+    s = []
+    if not self.empty:
+        for p in self.particles:
+            s.append(int(p.pos.get_val_time(tstep)))
+    return np.array(s)</code></pre>
+</details>
+</dd>
+<dt id="quantumstring.particle.Particles.mass_density"><code class="name flex">
+<span>def <span class="ident">mass_density</span></span>(<span>self, tstep=-1, fixed=False) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a list where each cell corresponds to a cell of the string. if cell == 0, no particle on this step. if cell &gt;= 1, corresponds to the total mass at that cell</p>
+<p>:param tstep: the time step considered
+:param fixed: if True, will return only the masses that are fixed on the string</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mass_density(self, tstep=-1, fixed=False) -&gt; list[float]:
+    &#34;&#34;&#34;
+        Return a list where each cell corresponds to a cell of the string. if cell == 0, no particle on this step. if cell &gt;= 1, corresponds to the total mass at that cell
+        
+        :param tstep: the time step considered
+        :param fixed: if True, will return only the masses that are fixed on the string
+    &#34;&#34;&#34;
+    s = [0.0]*self.space_steps
+    if not self.empty:
+        for p in self.particles:
+            pos = int(p.pos.get_val_time(tstep)) # get the position of each particle
+            s[pos] += 0.0 if fixed and not p.fixed else p.mass # increment the vector where the particle is
+    return np.array(s)</code></pre>
+</details>
+</dd>
+<dt id="quantumstring.particle.Particles.mass_presence"><code class="name flex">
+<span>def <span class="ident">mass_presence</span></span>(<span>self, tstep=-1, fixed=False) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a list where each cell corresponds to a cell of the string. if cell == False, no particle on this step. if cell == True, at least 1 particle is present on this cell</p>
+<p>:param tstep: the time step considered
+:param fixed: if True, will return only the masses that are fixed on the string</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mass_presence(self, tstep=-1, fixed=False) -&gt; list[bool]:
+    &#34;&#34;&#34;
+        Return a list where each cell corresponds to a cell of the string. if cell == False, no particle on this step. if cell == True, at least 1 particle is present on this cell
+        
+        :param tstep: the time step considered
+        :param fixed: if True, will return only the masses that are fixed on the string
+    &#34;&#34;&#34;
+    s = np.array([False]*self.space_steps)
+    md = self.mass_density(tstep=tstep, fixed=fixed)
+    s[md != 0] = True
+    return np.array(s)</code></pre>
+</details>
+</dd>
+<dt id="quantumstring.particle.Particles.spring_density"><code class="name flex">
+<span>def <span class="ident">spring_density</span></span>(<span>self, tstep=-1, fixed=False) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a list where each cell corresponds to a cell of the string. if cell == 0, no particle on this step. if cell &gt; 0, the value corresponds to the spring stiffness attached to this cell</p>
+<p>:param tstep: the time step considered
+:param fixed: if True, will return only the masses that are fixed on the string</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def spring_density(self, tstep=-1, fixed=False) -&gt; list[float]:
+    &#34;&#34;&#34;
+        Return a list where each cell corresponds to a cell of the string. if cell == 0, no particle on this step. if cell &gt; 0, the value corresponds to the spring stiffness attached to this cell
+        
+        :param tstep: the time step considered
+        :param fixed: if True, will return only the masses that are fixed on the string
+    &#34;&#34;&#34;
+    s = [0.0]*self.space_steps
+    if not self.empty:
+        for p in self.particles:
+            pos = int(p.pos.get_val_time(tstep)) # get the position of each particle
+            s[pos] += 0.0 if fixed and not p.fixed else p.stiffness # increment the vector where the particle is
+    return np.array(s)</code></pre>
+</details>
+</dd>
+<dt id="quantumstring.particle.Particles.update"><code class="name flex">
+<span>def <span class="ident">update</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Updates all the particles</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update(self):
+    &#34;&#34;&#34;
+        Updates all the particles
+    &#34;&#34;&#34;
+    if not self.empty:
+        for p in self.particles:
+            p.update()</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="quantumstring" href="index.html">quantumstring</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="quantumstring.particle.Particle" href="#quantumstring.particle.Particle">Particle</a></code></h4>
+<ul class="two-column">
+<li><code><a title="quantumstring.particle.Particle.STR_COLOR" href="#quantumstring.particle.Particle.STR_COLOR">STR_COLOR</a></code></li>
+<li><code><a title="quantumstring.particle.Particle.STR_INIT_POS" href="#quantumstring.particle.Particle.STR_INIT_POS">STR_INIT_POS</a></code></li>
+<li><code><a title="quantumstring.particle.Particle.STR_MASS" href="#quantumstring.particle.Particle.STR_MASS">STR_MASS</a></code></li>
+<li><code><a title="quantumstring.particle.Particle.STR_PULSATION" href="#quantumstring.particle.Particle.STR_PULSATION">STR_PULSATION</a></code></li>
+<li><code><a title="quantumstring.particle.Particle.STR_STIFFNESS" href="#quantumstring.particle.Particle.STR_STIFFNESS">STR_STIFFNESS</a></code></li>
+<li><code><a title="quantumstring.particle.Particle.fixed" href="#quantumstring.particle.Particle.fixed">fixed</a></code></li>
+<li><code><a title="quantumstring.particle.Particle.infos" href="#quantumstring.particle.Particle.infos">infos</a></code></li>
+<li><code><a title="quantumstring.particle.Particle.mass" href="#quantumstring.particle.Particle.mass">mass</a></code></li>
+<li><code><a title="quantumstring.particle.Particle.pulsation" href="#quantumstring.particle.Particle.pulsation">pulsation</a></code></li>
+<li><code><a title="quantumstring.particle.Particle.space_steps" href="#quantumstring.particle.Particle.space_steps">space_steps</a></code></li>
+<li><code><a title="quantumstring.particle.Particle.stiffness" href="#quantumstring.particle.Particle.stiffness">stiffness</a></code></li>
+<li><code><a title="quantumstring.particle.Particle.update" href="#quantumstring.particle.Particle.update">update</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="quantumstring.particle.Particles" href="#quantumstring.particle.Particles">Particles</a></code></h4>
+<ul class="two-column">
+<li><code><a title="quantumstring.particle.Particles.empty" href="#quantumstring.particle.Particles.empty">empty</a></code></li>
+<li><code><a title="quantumstring.particle.Particles.free_particles" href="#quantumstring.particle.Particles.free_particles">free_particles</a></code></li>
+<li><code><a title="quantumstring.particle.Particles.infos" href="#quantumstring.particle.Particles.infos">infos</a></code></li>
+<li><code><a title="quantumstring.particle.Particles.list_free" href="#quantumstring.particle.Particles.list_free">list_free</a></code></li>
+<li><code><a title="quantumstring.particle.Particles.list_pos" href="#quantumstring.particle.Particles.list_pos">list_pos</a></code></li>
+<li><code><a title="quantumstring.particle.Particles.mass_density" href="#quantumstring.particle.Particles.mass_density">mass_density</a></code></li>
+<li><code><a title="quantumstring.particle.Particles.mass_presence" href="#quantumstring.particle.Particles.mass_presence">mass_presence</a></code></li>
+<li><code><a title="quantumstring.particle.Particles.particles" href="#quantumstring.particle.Particles.particles">particles</a></code></li>
+<li><code><a title="quantumstring.particle.Particles.space_steps" href="#quantumstring.particle.Particles.space_steps">space_steps</a></code></li>
+<li><code><a title="quantumstring.particle.Particles.spring_density" href="#quantumstring.particle.Particles.spring_density">spring_density</a></code></li>
+<li><code><a title="quantumstring.particle.Particles.update" href="#quantumstring.particle.Particles.update">update</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>

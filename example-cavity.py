@@ -9,7 +9,7 @@ from quantumstring.process import PostProcess
 import numpy as np
 
 mypath = os.path.dirname(os.path.abspath(__file__))
-mypath = "C:\\Users\\leog\\Desktop\\lg2021stage\\output"
+mypath = "C:\\Users\\grdle\\Documents\\UGA\\M1\\Stage\\output"
 
 duration = 1.0 # [s]
 space_steps = 511

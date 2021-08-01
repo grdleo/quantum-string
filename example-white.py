@@ -1,7 +1,7 @@
 from datetime import time
 import os
 
-from quantumstring.simulation import Cavity, PulseRingString, RingString, Simulation
+from quantumstring.simulation import Cavity, RingString, Simulation
 from quantumstring.edge import ExcitatorSinAbsorber, LoopEdge, MirrorEdge, ExcitatorSin, AbsorberEdge, ExcitatorWhiteNoise
 from quantumstring.particle import Particles, Particle
 from quantumstring.process import PostProcess
@@ -10,7 +10,7 @@ from quantumstring.phystring import PhyString
 import numpy as np
 
 mypath = os.path.dirname(os.path.abspath(__file__))
-mypath = "C:\\Users\\leog\\Desktop\\lg2021stage\\output"
+mypath = "C:\\Users\\grdle\\Documents\\UGA\\M1\\Stage\\output"
 
 duration = 5.0 # [s]
 space_steps = 511
@@ -24,8 +24,8 @@ dt = dx/c
 time_steps = int(duration/dt)
 duration = dt*time_steps
 
-left = MirrorEdge()
-right = MirrorEdge()
+left = LoopEdge()
+right = LoopEdge()
 
 xline = np.linspace(0.0, length, space_steps)
 

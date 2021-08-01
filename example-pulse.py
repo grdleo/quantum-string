@@ -10,7 +10,7 @@ import numpy as np
 from scipy import signal 
 
 mypath = os.path.dirname(os.path.abspath(__file__))
-mypath = "C:\\Users\\leog\\Desktop\\lg2021stage\\output"
+mypath = "C:\\Users\\grdle\\Documents\\UGA\\M1\\Stage\\output"
 
 duration = 2.5 # [s]
 space_steps = 511

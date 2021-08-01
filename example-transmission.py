@@ -12,10 +12,10 @@ from matplotlib import pyplot as plt
 from scipy import fftpack as fft
 
 mypath = os.path.dirname(os.path.abspath(__file__))
-mypath = "C:\\Users\\leog\\Desktop\\lg2021stage\\output"
+mypath = "C:\\Users\\grdle\\Documents\\UGA\\M1\\Stage\\output"
 
 duration = 2.0 # [s]
-space_steps = 1023
+space_steps = 2047
 length = 6.0 # [m]
 tension = 5.0 # [N]
 density = 0.005 # [kg/m]
@@ -100,7 +100,7 @@ for omega in pulsations:
     print("|t|\n    ={} (theory)\n    ={} (simulation)".format(np.abs(t_theory), np.abs(t_exp)))
     print("arg(t)\n    ={} (theory)\n    ={} (simulation)".format(np.angle(t_theory), np.angle(t_exp)))
 
-pulsation_spectrum = np.linspace(1.0, 1000.0, 2000)
+pulsation_spectrum = np.linspace(1.0, 1000.0, 200)
 alpha_spectrum = 2*density*c*pulsation_spectrum/(pstiff - pmass*pulsation_spectrum**2)
 t_spectrum = transmission_value(alpha_spectrum)
 mod_sqr_spectrum = t_spectrum*t_spectrum.conjugate()

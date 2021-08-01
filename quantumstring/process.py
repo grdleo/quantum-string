@@ -33,6 +33,11 @@ class PostProcess:
     COLOR_BLUE = (255, 0, 0)
 
     def __init__(self, fieldfile: TextIOWrapper, particlesfile: TextIOWrapper, energyfile: TextIOWrapper, log=True):
+        """
+            :param fieldfile: simulation file of field
+            :param particlesfile: simulation file of particles
+            :param energyfile: simulation file of energy
+        """
         self.log = log
 
         self.fieldfile = fieldfile
@@ -53,9 +58,19 @@ class PostProcess:
         self.duration = self.dt*self.nt
         self.particles = self.infos["particles"]
 
+        self.tline = np.linspace(0.0, self.duration, self.nt)
+        self.xline = np.linspace(0.0, self.L, self.nx)
+
         self.c = np.sqrt(self.T/self.rho)
     
-    def energy(self):
+    def energy(self, ax=plt.axes(), show=True, label="") -> None:
+        """
+            Draws a graph of the total energy of the field in function of time.
+
+            :param ax: matplotlib.pyplot axe to draw the graph
+            :param show: if `True`, will show the graph at the end of execution
+            :param label: string for legend
+        """
         self.energyfile.seek(0, 0)
         nrj_tot = []
 
@@ -65,26 +80,28 @@ class PostProcess:
                 e = Simulation.str2list(energyline)
                 nrj_tot.append(np.sum(e)*self.dx)
             t += 1
-        
-        tline = np.linspace(0.0, self.duration, self.nt)
 
         ax = plt.axes()
-        ax.plot(tline, nrj_tot, "b.")
+        ax.plot(self.tline, nrj_tot, ".", label=label)
         ax.set_title("Total energy of the string (simulation {})".format(self.date))
         ax.set_xlabel("t [s]")
         ax.set_ylabel("Energy [J]")
-        plt.show()
+        ax.legend() if label != "" else None
+        plt.show() if show else None
     
     def plot_particles(self, ax=plt.axes(), show=True, label="") -> None:
         """
             Plots a graph of the vertical position of the field where the particles are versus the time.
+
+            :param ax: matplotlib.pyplot axe to draw the graph
+            :param show: if `True`, will show the graph at the end of execution
+            :param label: string for legend
         """
-        pp = self.particles_pos()
-        tline = np.linspace(0, self.duration, self.nt)
+        pp = self._particles_pos()
         for pos, part in zip(pp.T, self.particles):
             c = np.flip(np.array(part[Particle.STR_COLOR])/255.0)
-            ax.plot(tline, pos, color=tuple(c))
-            ax.legend([label])
+            ax.plot(self.tline, pos, color=tuple(c))
+            ax.legend([label]) if label != "" else None
         ax.set_title("Particles vertical position (simulation {})".format(self.date))
         ax.set_xlabel("t [s]")
         ax.set_ylabel("z [m]")
@@ -93,8 +110,12 @@ class PostProcess:
     def phasegraph_particles(self, ax=plt.axes(), show=True, label="") -> None:
         """
             Plots a graph of the derivative of the vertical position of the field, versus the actual vertical position of the field.
+
+            :param ax: matplotlib.pyplot axe to draw the graph
+            :param show: if `True`, will show the graph at the end of execution
+            :param label: string for legend
         """
-        pp = self.particles_pos()
+        pp = self._particles_pos()
         for pos, part in zip(pp.T, self.particles):
             dpos = np.gradient(pos, self.dt)
             c = np.flip(np.array(part[Particle.STR_COLOR])/255.0)
@@ -106,11 +127,18 @@ class PostProcess:
         plt.show() if show else None
     
     def plot_grad_particles(self, ax=plt.axes(), show=True, label="") -> None:
+        """
+            Draws a graph of the gradient near the particle. 
+            Solid line for the left gradient, dashed line for right gradient.
+
+            :param ax: matplotlib.pyplot axe to draw the graph
+            :param show: if `True`, will show the graph at the end of execution
+            :param label: string for legend
+        """
+
         ax.set_title("Gradient at left (solid) and right (dashed) to the particles")
         ax.set_xlabel("$t [s]$")
         ax.set_ylabel("$\frac{\partial u}{\partial x}$")
-
-        tline = np.linspace(0.0, self.duration, self.nt)
         for part in self.particles:
             cell = part[Particle.STR_INIT_POS]
             color = part[Particle.STR_COLOR]
@@ -120,8 +148,8 @@ class PostProcess:
             grad_left = (vpart[:,1] - vpart[:,0])/self.dx
             grad_right = (vpart[:,2] - vpart[:,1])/self.dx
 
-            ax.plot(tline, grad_left, linestyle="solid", color=color)
-            ax.plot(tline, grad_right, linestyle="dashed", color=color)
+            ax.plot(self.tline, grad_left, linestyle="solid", color=color)
+            ax.plot(self.tline, grad_right, linestyle="dashed", color=color)
         
         plt.show() if show else None
     
@@ -129,13 +157,20 @@ class PostProcess:
     def file2matrix(file: TextIOWrapper, type=float) -> np.ndarray:
         """
             Given a file generated using the `quantum-string` library, converts and returns the data as a 2D NumPy array
+
+            :param file: Python opened file
+            :param type: type of the numbers inside the file (`int`, `float`, `np.complex`...)
         """
         file.seek(0, 0)
         r = []
         t = -1
         for field in file:
             if t >= 0:
-                r.append(Simulation.str2list(field, type=type)) if field != "\n" else None
+                try:
+                    line = Simulation.str2list(field, type=type) if field != "\n" else None
+                    r.append(line) 
+                except:
+                    raise ValueError("File given has some errors or is not from a simulation! Please check the file.\n Problem at line {} with '{}'".format(t + 1, field))
             t += 1
         return np.array(r)
     
@@ -157,19 +192,26 @@ class PostProcess:
         return np.array(r)
     
     def plot_cells(self, *cells: int, ax=plt.axes(), show=True) -> np.ndarray:
+        """
+            Draws a graph of the value of the cells given, in function of time
+
+            :param cells: cells to draw the value
+            :param ax: matplotlib.pyplot axe to draw the graph
+            :param show: if `True`, will show the graph at the end of execution
+            :param label: string for legend
+        """
         cells_vals = self._get_cells(*cells)
         ax.set_title("Cells plotting (simulation {})".format(self.date))
         ax.set_xlabel("t [s]")
         ax.set_ylabel("u [m]")
 
-        tline = np.linspace(0.0, self.duration, self.nt)
         for c, idx in zip(cells_vals.T, cells):
-            ax.plot(tline, c, label="x={}m".format(idx*self.dx))
+            ax.plot(self.tline, c, label="x={}m".format(idx*self.dx))
             ax.legend()
         
         plt.plot() if show else None
         
-    def particles_pos(self) -> np.ndarray:
+    def _particles_pos(self) -> np.ndarray:
         """
             Returns a 2D array r[t,n] where r is the position of the particle, t the timestep considered, and n the index of the particle
         """
@@ -190,16 +232,16 @@ class PostProcess:
             t += 1
         return np.array(r)
     
-    def img_field(self, baseimg: np.ndarray, f: list[float], p: list[int], anim_params: dict, timestep: int, yscale=1.0) -> np.ndarray:
+    def _img_field(self, baseimg: np.ndarray, f: list[float], p: list[int], anim_params: dict, timestep: int, yscale=1.0) -> np.ndarray:
         """
             Create and returns an image of the current state of the simulation
 
             :param baseimg: base PIL Image to write onto
-            :param field: state of the string
-            :param particles_pos: the position (cell) of each particles
-            :param tstep: time step corresponding to the state
+            :param f: state of the string
+            :param p: the position (cell) of each particles
+            :param anim_params: dictionary containing the parameters of the animation
+            :param timestep: time step corresponding to the state
             :param yscale: scaling factor for vertical axis
-            :param infos: if True, prompt information of the simulation on video
         """
         img = np.copy(baseimg)
         x = np.linspace(anim_params["ox"], anim_params["endstring"], f.size).astype(np.int32)
@@ -236,7 +278,7 @@ class PostProcess:
             :param fps: frame per seconds for the generated video
             :param frameskip: will compute 1 out of `frameskip` frames for the generated video
             :param yscale: vertical scaling for field
-            :param compress: if `True`, will compress the video using `ffmeg`
+            :param compress: if `True`, will try to compress the video using `ffmeg`
         """
         ts = int(datetime.datetime.now().timestamp())
         self.fieldfile.seek(0, 0)
@@ -296,7 +338,7 @@ class PostProcess:
                 field = Simulation.str2list(field, type=float)
                 particles = Simulation.str2list(particles, type=int)
                 if t%frameskip == 0:
-                    img = self.img_field(baseimg, field, particles, anim_params, t, yscale=yscale)
+                    img = self._img_field(baseimg, field, particles, anim_params, t, yscale=yscale)
                     video.write(img)
             t += 1
         
@@ -358,7 +400,7 @@ class PostProcess:
         return l.dot(mat).dot(r)/factor
     
     @staticmethod
-    def prime_factors(num: int) -> list[int]:  
+    def _prime_factors(num: int) -> list[int]:  
         primes = []
         # Using the while loop, we will print the number of two's that divide n  
         while num%2 == 0:  
@@ -377,7 +419,7 @@ class PostProcess:
         return primes
 
     @staticmethod
-    def all_subsets(*el: object) -> list:
+    def _all_subsets(*el: object) -> list:
         n = len(el)
         subsets = []
         for i in range(0, 2**n):
@@ -391,13 +433,13 @@ class PostProcess:
         return subsets
 
     @staticmethod
-    def reduce_space(mat: np.ndarray, ideal_size: tuple[int]) -> np.ndarray:
+    def _reduce_space(mat: np.ndarray, ideal_size: tuple[int]) -> np.ndarray:
         """
             Reduces a given matrix doing the mean method, by a factor close to the one given in argument. If no factor is given, the highest possible will be made
         """
         for i, ideal, axis in zip(mat.shape, ideal_size, (1, 0)):
-            primes = PostProcess.prime_factors(i)[0:16] # we take no more than 16 primes, otherwise the subsets will be too long to compute...
-            subsets = PostProcess.all_subsets(*primes)
+            primes = PostProcess._prime_factors(i)[0:16] # we take no more than 16 primes, otherwise the subsets will be too long to compute...
+            subsets = PostProcess._all_subsets(*primes)
             all_factors = []
             for sub in subsets:
                 nb = np.prod(sub)
@@ -408,7 +450,7 @@ class PostProcess:
 
         return mat
     
-    def get_field(self, matrix_ideal_res: int) -> tuple[np.ndarray]:
+    def _get_field(self, matrix_ideal_res: int) -> tuple[np.ndarray]:
         self.fieldfile.seek(0, 0)
         Z = [] # mat[t,x]
         t = -1
@@ -419,7 +461,7 @@ class PostProcess:
         Z = np.array(Z)
 
         ideal_size = (matrix_ideal_res, matrix_ideal_res) # Z matrix is often too large to be plot correctly...
-        Z = PostProcess.reduce_space(Z, ideal_size) if matrix_ideal_res < np.inf else Z
+        Z = PostProcess._reduce_space(Z, ideal_size) if matrix_ideal_res < np.inf else Z
         tsize, xsize = Z.shape
 
         xline = np.linspace(0.0, self.L, xsize)
@@ -428,31 +470,56 @@ class PostProcess:
 
         return X.T, T.T, Z.T
 
-    def plot3d(self, matrix_ideal_res=128, cmap="viridis"):
+    def plot3d(self, ax=plt.axes(), show=True, matrix_ideal_res=128, cmap="viridis"):
+        """
+            Draws a graph of the values of the field as a function of time, as a 3D graph
+
+            :param ax: matplotlib.pyplot axe to draw the graph
+            :param show: if `True`, will show the graph at the end of execution
+            :param label: string for legend
+            :param matrix_ideal_res: ideal resolution for the matrix to plot
+            :param cmap: colormap of the graph
+        """
+
         fig = plt.figure()
         ax = plt.axes(projection='3d')
-        ax.plot_surface(*self.get_field(matrix_ideal_res),
+        ax.plot_surface(*self._get_field(matrix_ideal_res),
                 rstride=1, cstride=1,
                 cmap=cmap, edgecolor='none')
         ax.set_title("Graph evolution of the field (simulation {})".format(self.date))
         ax.set_xlabel("x [m]")
         ax.set_ylabel("ct [m]")
         ax.set_zlabel("u [m]")
-        plt.show()
+        plt.show() if show else None
     
-    def plot2d(self, matrix_ideal_res=np.inf, cmap="viridis"):
-        fig = plt.figure()
-        ax = plt.axes()
-        im = ax.pcolormesh(*self.get_field(matrix_ideal_res),
+    def plot2d(self, ax=plt.axes(), show=True, matrix_ideal_res=np.inf, cmap="viridis"):
+        """
+            Draws a graph of the values of the field as a function of time, as a 2D colored graph
+
+            :param ax: matplotlib.pyplot axe to draw the graph
+            :param show: if `True`, will show the graph at the end of execution
+            :param label: string for legend
+            :param matrix_ideal_res: ideal resolution for the matrix to plot
+            :param cmap: colormap of the graph
+        """
+        im = ax.pcolormesh(*self._get_field(matrix_ideal_res),
                 cmap=cmap,
                 rasterized=True)
         ax.set_title("Color mesh of the field (simulation {})".format(self.date))
         ax.set_xlabel("x [m]")
         ax.set_ylabel("ct [m]")
-        fig.colorbar(im, ax=ax)
-        plt.show()
+        ax.colorbar(im, ax=ax)
+        plt.show() if show else None
 
     def fourier(self, *windows, frameskip=1, spectrograph=True, path=os.path.dirname(os.path.abspath(__file__))) -> list[str]:
+        """
+            Computes the spatial FFT of the field, in each given window, for all times. 
+
+            :param windows: list of tuples that represents the windows (dimensionless values) where to compute
+            :param frameskip: ill compute 1 out of `frameskip` frames for the FFT
+            :param spectrograph: if `True` will generate and save a spectrograph of the FFT for each window in path
+            :param path: path where to save the FFT
+        """
         ts = int(datetime.datetime.now().timestamp())
         self.fieldfile.seek(0, 0)
         self.particlesfile.seek(0, 0)
